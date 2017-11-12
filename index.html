@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Axolotl</title>
+  <meta name="keywords" content="Axolotl PixelArt Pad" />
+  <meta charset="UTF-8" />
+  <meta name="author" content="Tyler Stark">
+  <meta name="viewport" content="initial-scale=1.0, width=device-width, user-scalable=no" />
+  <link href='./style.css' rel='stylesheet' type='text/css'>
+  <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+</head>
+<body>
+<h1>Axolotl</h1>
+<main id="app" class="app">
+  <section class="canvasWrapper">
+    <h2>Canvas</h2>
+    <canvas class="canvas" height="500" id="canvas" width="500"></canvas>
+  </section>
+  <section class="sidebar">
+    <section class="actions">
+      <h2>Action</h2>
+      <input id="action-rectangle" name="action" type="radio" value="rectangle" checked>
+      <label for="action-rectangle">Rectangle</label>
+
+      <input id="action-circle" name="action" type="radio" value="circle">
+      <label for="action-circle">Circle</label>
+
+      <input id="action-line" name="action" type="radio" value="line">
+      <label for="action-line">Line</label>
+    </section>
+    <section>
+      <input id="actionFillColor" type="color">
+      <label for="actionFillColor">Fill</label>
+
+      <input id="actionLineColor" type="color">
+      <label for="actionLineColor">Line</label>
+    </section>
+    <section>
+      <h2>Layers</h2>
+      <ul class="layers" id="layers"></ul>
+    </section>
+
+  </section>
+</main>
+<script src="./app.js"></script>
+</body>
+</html>
