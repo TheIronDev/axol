@@ -12,9 +12,12 @@
 <body>
 <h1>Axolotl</h1>
 <main id="app" class="app">
-  <section class="canvasWrapper">
+  <section>
     <h2>Canvas</h2>
-    <canvas class="canvas" height="500" id="canvas" width="500"></canvas>
+    <div class="canvasWrapper">
+      <canvas class="previewCanvas" height="500" id="previewCanvas" width="500"></canvas>
+      <canvas class="canvas" height="500" id="targetCanvas" width="500"></canvas>
+    </div>
   </section>
   <section class="sidebar">
     <section class="actions">

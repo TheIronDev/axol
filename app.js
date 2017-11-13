@@ -1,6 +1,8 @@
-const canvasEl = document.getElementById('canvas');
+const targetCanvasEl = document.getElementById('targetCanvas');
+const targetCtx = targetCanvasEl.getContext('2d');
+const previewCanvasEl = document.getElementById('previewCanvas');
+const previewCtx = previewCanvasEl.getContext('2d');
 const layersEl = document.getElementById('layers');
-const ctx = canvasEl.getContext('2d');
 
 const ActionEnum = {
   LINE: 'l',
@@ -30,11 +32,20 @@ function setAction(actionInput) {
 }
 
 /**
+ * Handles clearing a canvas context.
+ * @param {!CanvasRenderingContext2D} ctx
+ */
+function clearCanvas(ctx) {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+}
+
+/**
  * Draws the canvas given an array of actions.
  * @param {!CanvasRenderingContext2D} ctx
  * @param {!Array<!ActionEvent>} actionHistory
  */
 function drawCanvas(ctx, actionHistory) {
+  clearCanvas(ctx);
   actionHistory.forEach(({type, params}) => {
     const {startX, startY, fillColor, lineColor} = params;
     ctx.fillStyle = fillColor;
@@ -84,7 +95,44 @@ function updateLayers(actionHistory) {
   layersEl.appendChild(docFrag);
 }
 
-function addActionEvent(actionHistory, type, params) {
+/**
+ * Handles adding new action events to action events.
+ * @param {!Array<!ActionEvent>} actionHistory
+ * @param {number} offsetX
+ * @param {number} offsetY
+ */
+function addActionEvent(actionHistory, offsetX, offsetY) {
+  const params = {
+    fillColor: currentActionFillColor,
+    lineColor: currentActionLineColor,
+    startX: startOffsetX,
+    startY: startOffsetY
+  };
+  let type;
+
+  switch (currentAction) {
+    case ActionEnum.CIRCLE:
+      const radius = Math.sqrt(
+          (offsetY - startOffsetY) ** 2 + (offsetX - startOffsetX) ** 2);
+      Object.assign(params, {radius});
+      type = ActionEnum.CIRCLE;
+      break;
+    case ActionEnum.LINE:
+      Object.assign(params, {endX: offsetX, endY: offsetY});
+      type = ActionEnum.LINE;
+      break;
+    case ActionEnum.RECTANGLE:
+      const width = offsetX - startOffsetX;
+      const height = offsetY - startOffsetY;
+      Object.assign(params, {height, width});
+      type = ActionEnum.RECTANGLE;
+      break;
+    default:
+  }
+
+  if (!type) {
+    return;
+  }
   actionHistory.push({type, params});
 }
 
@@ -92,15 +140,17 @@ function addActionEvent(actionHistory, type, params) {
  * @type {!Array<!ActionEvent>}
  */
 let currentActionHistory = [];
+let previewActionHistory = [];
 let currentAction = ActionEnum.RECTANGLE;
 let currentActionFillColor = '#000';
 let currentActionLineColor = '#000';
+let isPerformingAction = false;
 let startOffsetX;
 let startOffsetY;
 
 
 /**
- * Handles mousedown events on the canvas. This will generally only be used to
+ * Handles `mousedown` events on the canvas. This will generally only be used to
  * track the starting x and y offsets.
  * @param {!MouseEvent} ev
  */
@@ -115,51 +165,42 @@ function onCanvasMouseDown(ev) {
       break;
     default:
   }
+  isPerformingAction = true;
 }
 
 /**
- * Handles mouseup events on the canvas.
+ * Handles `mousemove` events on the canvas.
+ * @param {!MouseEvent} ev
+ */
+function onCanvasMouseMove(ev) {
+  if (!isPerformingAction) {
+    return;
+  }
+  requestAnimationFrame(() => {
+    const {offsetX, offsetY} = ev;
+    previewActionHistory = [];
+    addActionEvent(previewActionHistory, offsetX, offsetY);
+    drawCanvas(previewCtx, previewActionHistory);
+  });
+}
+
+/**
+ * Handles `mouseup` events on the canvas.
  * @param {!MouseEvent} ev
  */
 function onCanvasMouseUp(ev) {
   const {offsetX, offsetY} = ev;
-  const params = {
-    fillColor: currentActionFillColor,
-    lineColor: currentActionLineColor,
-    startX: startOffsetX,
-    startY: startOffsetY
-  };
-  switch (currentAction) {
-    case ActionEnum.CIRCLE:
-      const radius = Math.sqrt(
-          (offsetY - startOffsetY) ** 2 + (offsetX - startOffsetX) ** 2);
-      addActionEvent(
-          currentActionHistory,
-          ActionEnum.CIRCLE,
-          Object.assign(params, {radius}));
-      break;
-    case ActionEnum.LINE:
-      addActionEvent(
-          currentActionHistory,
-          ActionEnum.LINE,
-          Object.assign(params, {endX: offsetX, endY: offsetY}));
-      break;
-    case ActionEnum.RECTANGLE:
-      const width = offsetX - startOffsetX;
-      const height = offsetY - startOffsetY;
-      addActionEvent(
-          currentActionHistory,
-          ActionEnum.RECTANGLE,
-          Object.assign(params, {height, width}));
-      break;
-    default:
-  }
-  drawCanvas(ctx, currentActionHistory);
+  addActionEvent(currentActionHistory, offsetX, offsetY);
+
+  clearCanvas(previewCtx);
+  drawCanvas(targetCtx, currentActionHistory);
   updateLayers(currentActionHistory);
+  isPerformingAction = false;
 }
 
-canvasEl.addEventListener('mousedown', onCanvasMouseDown);
-canvasEl.addEventListener('mouseup', onCanvasMouseUp);
+targetCanvasEl.addEventListener('mousedown', onCanvasMouseDown);
+targetCanvasEl.addEventListener('mousemove', onCanvasMouseMove);
+targetCanvasEl.addEventListener('mouseup', onCanvasMouseUp);
 
 document.querySelector('.actions').addEventListener('change', (ev) => {
   setAction(ev.target.value)

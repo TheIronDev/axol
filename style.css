@@ -4,6 +4,8 @@ body {background: #fafafa;font: 10px 'Raleway', sans-serif;padding: 1rem}
 
 .app {display: flex; justify-content: space-between}
 .canvas {background: #fff; box-shadow: 0 5px 5px -5px #000; cursor: crosshair}
+.canvasWrapper {position: relative}
+.previewCanvas {opacity: .9;pointer-events: none;position: absolute}
 
 .sidebar {min-width: 20rem;}
 .layers {list-style: none;margin: 0;padding: 0;}
