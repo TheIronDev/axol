@@ -6,21 +6,43 @@ const layersEl = document.getElementById('layers');
 
 const ActionEnum = {
   LINE: 'l',
+  MOVE: 'm',
   CIRCLE: 'c',
   RECTANGLE: 'r',
   UNKNOWN: 'u'
 };
 
+const LayerActionEnums = {
+  DELETE: 'd',
+  SELECT: 's'
+};
+
 const ActionInputMap = {
   line: ActionEnum.LINE,
+  move: ActionEnum.MOVE,
   circle: ActionEnum.CIRCLE,
   rectangle: ActionEnum.RECTANGLE,
 };
 
 /**
- * @typedef {{type: ActionEnum}}
+ * @typedef {{type: ActionEnum, id: number, startX: number, startY: number}}
  */
 let ActionEvent;
+
+
+/**
+ * @type {!Array<!ActionEvent>}
+ */
+let currentActionHistory = [];
+let previewActionHistory = [];
+let currentAction = ActionEnum.RECTANGLE;
+let currentActionFillColor = '#000';
+let currentActionLineColor = '#000';
+let currentLayerActionEvent;
+let currentLayerId = 0;
+let isPerformingAction = false;
+let startOffsetX;
+let startOffsetY;
 
 /**
  * Sets the current action
@@ -87,16 +109,22 @@ function addLayer(actionEvent) {
   const li = document.createElement('li');
   li.classList.add('layer');
   li.id = layerId;
+  li.setAttribute('data-id', id);
 
   const close = document.createElement('i');
   close.classList.add('material-icons');
   close.classList.add('closeLayer');
   close.innerText = 'delete';
   close.setAttribute('data-id', id);
+  close.setAttribute('data-action', LayerActionEnums.DELETE);
 
   const radio = document.createElement('input');
   radio.type = 'radio';
   radio.name = 'currentLayer';
+  radio.value = id;
+  radio.setAttribute('data-id', id);
+  radio.checked = true;
+  radio.setAttribute('data-action', LayerActionEnums.SELECT);
 
   const description = document.createElement('span');
   description.name = 'currentLayer';
@@ -110,7 +138,8 @@ function addLayer(actionEvent) {
   li.appendChild(close);
   li.appendChild(description);
 
-  layersEl.appendChild(li);
+  layersEl.insertBefore(li, layersEl.firstChild);
+  currentLayerActionEvent = getCurrentActionEvent(id);
 }
 
 /**
@@ -118,7 +147,13 @@ function addLayer(actionEvent) {
  */
 function removeLayer (id) {
   const layer = document.getElementById(`action-${id}`);
+  const selectQuery = `[data-action="${LayerActionEnums.SELECT}"]`;
   if (layer) {
+    if (layer.previousSibling) {
+      layer.previousSibling.querySelector(selectQuery).checked = true
+    } else if (layer.nextSibling) {
+      layer.nextSibling.querySelector(selectQuery).checked = true
+    }
     layer.parentNode.removeChild(layer);
   }
 }
@@ -183,36 +218,25 @@ function getActionEvent(offsetX, offsetY) {
 }
 
 /**
- * @type {!Array<!ActionEvent>}
- */
-let currentActionHistory = [];
-let previewActionHistory = [];
-let currentAction = ActionEnum.RECTANGLE;
-let currentActionFillColor = '#000';
-let currentActionLineColor = '#000';
-let currentLayerId = 0;
-let isPerformingAction = false;
-let startOffsetX;
-let startOffsetY;
-
-
-/**
  * Handles `mousedown` events on the canvas. This will generally only be used to
  * track the starting x and y offsets.
  * @param {!MouseEvent} ev
  */
 function onCanvasMouseDown(ev) {
   const {offsetX, offsetY} = ev;
+  isPerformingAction = true;
+
   switch (currentAction) {
     case ActionEnum.CIRCLE:
     case ActionEnum.RECTANGLE:
     case ActionEnum.LINE:
+    case ActionEnum.MOVE:
       startOffsetX = offsetX;
       startOffsetY = offsetY;
       break;
     default:
+      return new Error('ActionEnum not handled in mousedown');
   }
-  isPerformingAction = true;
 }
 
 /**
@@ -224,7 +248,25 @@ function onCanvasMouseMove(ev) {
     return;
   }
   const {offsetX, offsetY} = ev;
-  const actionEvent = getActionEvent(offsetX, offsetY);
+  let actionEvent;
+
+  switch (currentAction) {
+    case ActionEnum.CIRCLE:
+    case ActionEnum.RECTANGLE:
+    case ActionEnum.LINE:
+      actionEvent = getActionEvent(offsetX, offsetY);
+      break;
+    case ActionEnum.MOVE:
+      const xOffset = offsetX - startOffsetX;
+      const yOffset = offsetY - startOffsetY;
+      const startX = currentLayerActionEvent.startX + xOffset;
+      const startY = currentLayerActionEvent.startY + yOffset;
+      actionEvent =
+          Object.assign({}, currentLayerActionEvent, {startX, startY});
+      break;
+    default:
+      return new Error('ActionEnum not handled in mousemove');
+  }
 
   previewActionHistory = [actionEvent];
   drawCanvas(previewCtx, previewActionHistory);
@@ -236,17 +278,37 @@ function onCanvasMouseMove(ev) {
  */
 function onCanvasMouseUp(ev) {
   const {offsetX, offsetY} = ev;
-  const actionEvent = getActionEvent(offsetX, offsetY);
   isPerformingAction = false;
 
-  if (!actionEvent) {
-    return;
+  switch (currentAction) {
+    case ActionEnum.CIRCLE:
+    case ActionEnum.RECTANGLE:
+    case ActionEnum.LINE:
+      const actionEvent = getActionEvent(offsetX, offsetY);
+
+      if (!actionEvent) {
+        return;
+      }
+
+      actionEvent.id = ++currentLayerId;
+      currentActionHistory.push(actionEvent);
+      addLayer(/** @type {!ActionEvent} */ actionEvent);
+      break;
+    case ActionEnum.MOVE:
+      const xOffset = offsetX - startOffsetX;
+      const yOffset = offsetY - startOffsetY;
+      const startX = currentLayerActionEvent.startX + xOffset;
+      const startY = currentLayerActionEvent.startY + yOffset;
+
+      // Update the existing ActionEvent
+      Object.assign(currentLayerActionEvent, {startX, startY});
+      // TODO: Update layer
+      break;
+    default:
   }
-  actionEvent.id = ++currentLayerId;
-  currentActionHistory.push(actionEvent);
+
   clearCanvas(previewCtx);
   drawCanvas(targetCtx, currentActionHistory);
-  addLayer(actionEvent);
 }
 
 targetCanvasEl.addEventListener('mousedown', onCanvasMouseDown);
@@ -265,11 +327,30 @@ document.querySelector('#actionLineColor').addEventListener('change', (ev) => {
   currentActionLineColor = ev.target.value;
 });
 
-layersEl.addEventListener('click', (ev) => {
-  const id = parseInt(ev.target.dataset && ev.target.dataset.id, 10);
+layersEl.addEventListener('change', (ev) => {
+  const id = parseInt(ev.target.value, 10);
+  currentLayerActionEvent = getCurrentActionEvent(id);
+}, true);
 
-  removeLayer(id);
-  removeCurrentActionEvent(id);
+layersEl.addEventListener('click', (ev) => {
+  const dataset = ev.target.dataset || {};
+  const id = parseInt(dataset.id, 10);
+  const action = dataset.action;
+
+  if (!id) {
+    return;
+  }
+
+  switch (action) {
+    case LayerActionEnums.DELETE:
+      removeLayer(id);
+      removeCurrentActionEvent(id);
+      break;
+    case LayerActionEnums.SELECT:
+      break;
+    default:
+  }
+
   clearCanvas(previewCtx);
   drawCanvas(targetCtx, currentActionHistory);
 }, true);
