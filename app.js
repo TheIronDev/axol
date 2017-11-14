@@ -321,8 +321,10 @@ targetCanvasEl.addEventListener('mousedown', onCanvasMouseDown);
 targetCanvasEl.addEventListener('mousemove', onCanvasMouseMove);
 targetCanvasEl.addEventListener('mouseup', onCanvasMouseUp);
 
-document.querySelector('.actions').addEventListener('change', (ev) => {
-  setAction(ev.target.value)
+document.querySelectorAll('.actions').forEach((actionSection) => {
+  actionSection.addEventListener('change', (ev) => {
+    setAction(ev.target.value)
+  });
 });
 
 document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
