@@ -18,7 +18,7 @@ const ActionInputMap = {
 };
 
 /**
- * @typedef {{type: ActionEnum, params: Object}}
+ * @typedef {{type: ActionEnum}}
  */
 let ActionEvent;
 
@@ -43,11 +43,12 @@ function clearCanvas(ctx) {
  * Draws the canvas given an array of actions.
  * @param {!CanvasRenderingContext2D} ctx
  * @param {!Array<!ActionEvent>} actionHistory
+ * @param {boolean} isHighlight
  */
 function drawCanvas(ctx, actionHistory) {
   clearCanvas(ctx);
-  actionHistory.forEach(({type, params}) => {
-    const {startX, startY, fillColor, lineColor} = params;
+  actionHistory.forEach((params) => {
+    const {fillColor, lineColor, startX, startY, type} = params;
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
     switch (type) {
@@ -77,33 +78,78 @@ function drawCanvas(ctx, actionHistory) {
 
 /**
  * Updates the layers of actions
- * @param {!Array<!ActionEvent>} actionHistory
+ * @param {!ActionEvent} actionEvent
  */
-function updateLayers(actionHistory) {
-  while(layersEl.firstChild){
-    layersEl.removeChild(layersEl.firstChild);
-  }
-  const docFrag = document.createDocumentFragment();
-  actionHistory.forEach(({type, params}) => {
-    const element = document.createElement('li');
-    const paramString = Object.keys(params)
-        .map((key) => `${key}:${params[key]}`)
-        .join(' ');
-    element.innerText = `${type}: ${paramString}`;
-    docFrag.appendChild(element);
-  });
-  layersEl.appendChild(docFrag);
+function addLayer(actionEvent) {
+  const {id, type} = actionEvent;
+  const layerId = `action-${id}`;
+
+  const li = document.createElement('li');
+  li.classList.add('layer');
+  li.id = layerId;
+
+  const close = document.createElement('i');
+  close.classList.add('material-icons');
+  close.classList.add('closeLayer');
+  close.innerText = 'delete';
+  close.setAttribute('data-id', id);
+
+  const radio = document.createElement('input');
+  radio.type = 'radio';
+  radio.name = 'currentLayer';
+
+  const description = document.createElement('span');
+  description.name = 'currentLayer';
+
+  const paramString = Object.keys(actionEvent)
+      .map((key) => `${key}:${actionEvent[key]}`)
+      .join(' ');
+  description.innerText = `${type}: ${paramString}`;
+
+  li.appendChild(radio);
+  li.appendChild(close);
+  li.appendChild(description);
+
+  layersEl.appendChild(li);
 }
 
 /**
- * Handles adding new action events to action events.
- * @param {!Array<!ActionEvent>} actionHistory
+ * @param {number} id
+ */
+function removeLayer (id) {
+  const layer = document.getElementById(`action-${id}`);
+  if (layer) {
+    layer.parentNode.removeChild(layer);
+  }
+}
+
+function addCurrentActionEvent(actionEvent) {
+  currentActionHistory.push(actionEvent);
+}
+
+function addPreviewActionEvent(actionEvent) {
+  previewActionHistory.push(actionEvent);
+}
+
+function removeCurrentActionEvent(id) {
+  currentActionHistory = currentActionHistory
+      .filter((actionEvent) => id !== actionEvent.id);
+}
+
+function getCurrentActionEvent(id) {
+  return currentActionHistory.find((actionEvent) => id === actionEvent.id);
+}
+
+/**
+ * Returns new action events.
  * @param {number} offsetX
  * @param {number} offsetY
+ * @return {?ActionEvent}
  */
-function addActionEvent(actionHistory, offsetX, offsetY) {
+function getActionEvent(offsetX, offsetY) {
   const params = {
     fillColor: currentActionFillColor,
+    id: null,
     lineColor: currentActionLineColor,
     startX: startOffsetX,
     startY: startOffsetY
@@ -114,26 +160,26 @@ function addActionEvent(actionHistory, offsetX, offsetY) {
     case ActionEnum.CIRCLE:
       const radius = Math.sqrt(
           (offsetY - startOffsetY) ** 2 + (offsetX - startOffsetX) ** 2);
-      Object.assign(params, {radius});
       type = ActionEnum.CIRCLE;
+      Object.assign(params, {radius, type});
       break;
     case ActionEnum.LINE:
-      Object.assign(params, {endX: offsetX, endY: offsetY});
       type = ActionEnum.LINE;
+      Object.assign(params, {endX: offsetX, endY: offsetY, type});
       break;
     case ActionEnum.RECTANGLE:
       const width = offsetX - startOffsetX;
       const height = offsetY - startOffsetY;
-      Object.assign(params, {height, width});
       type = ActionEnum.RECTANGLE;
+      Object.assign(params, {height, type, width});
       break;
     default:
   }
 
   if (!type) {
-    return;
+    return null;
   }
-  actionHistory.push({type, params});
+  return /** @type {!ActionEvent} */ params;
 }
 
 /**
@@ -144,6 +190,7 @@ let previewActionHistory = [];
 let currentAction = ActionEnum.RECTANGLE;
 let currentActionFillColor = '#000';
 let currentActionLineColor = '#000';
+let currentLayerId = 0;
 let isPerformingAction = false;
 let startOffsetX;
 let startOffsetY;
@@ -176,12 +223,11 @@ function onCanvasMouseMove(ev) {
   if (!isPerformingAction) {
     return;
   }
-  requestAnimationFrame(() => {
-    const {offsetX, offsetY} = ev;
-    previewActionHistory = [];
-    addActionEvent(previewActionHistory, offsetX, offsetY);
-    drawCanvas(previewCtx, previewActionHistory);
-  });
+  const {offsetX, offsetY} = ev;
+  const actionEvent = getActionEvent(offsetX, offsetY);
+
+  previewActionHistory = [actionEvent];
+  drawCanvas(previewCtx, previewActionHistory);
 }
 
 /**
@@ -190,12 +236,17 @@ function onCanvasMouseMove(ev) {
  */
 function onCanvasMouseUp(ev) {
   const {offsetX, offsetY} = ev;
-  addActionEvent(currentActionHistory, offsetX, offsetY);
+  const actionEvent = getActionEvent(offsetX, offsetY);
+  isPerformingAction = false;
 
+  if (!actionEvent) {
+    return;
+  }
+  actionEvent.id = ++currentLayerId;
+  currentActionHistory.push(actionEvent);
   clearCanvas(previewCtx);
   drawCanvas(targetCtx, currentActionHistory);
-  updateLayers(currentActionHistory);
-  isPerformingAction = false;
+  addLayer(actionEvent);
 }
 
 targetCanvasEl.addEventListener('mousedown', onCanvasMouseDown);
@@ -213,3 +264,31 @@ document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
 document.querySelector('#actionLineColor').addEventListener('change', (ev) => {
   currentActionLineColor = ev.target.value;
 });
+
+layersEl.addEventListener('click', (ev) => {
+  const id = parseInt(ev.target.dataset && ev.target.dataset.id, 10);
+
+  removeLayer(id);
+  removeCurrentActionEvent(id);
+  clearCanvas(previewCtx);
+  drawCanvas(targetCtx, currentActionHistory);
+}, true);
+
+layersEl.addEventListener('mousemove', (ev) => {
+  const id = parseInt(ev.target.dataset.id, 10);
+  const actionEvent = getCurrentActionEvent(id);
+  if (!actionEvent) {
+    return;
+  }
+
+  const previewEvent = Object.assign(
+      {},
+      actionEvent,
+      {fillColor: '#f00', lineColor: '#f00'});
+  previewActionHistory = [previewEvent];
+  drawCanvas(previewCtx, previewActionHistory);
+}, true);
+
+layersEl.addEventListener('mouseleave', () => {
+  clearCanvas(previewCtx);
+}, true);
