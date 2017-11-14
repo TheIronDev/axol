@@ -148,11 +148,17 @@ function addLayer(actionEvent) {
 function removeLayer (id) {
   const layer = document.getElementById(`action-${id}`);
   const selectQuery = `[data-action="${LayerActionEnums.SELECT}"]`;
+  let selectedRadio;
   if (layer) {
     if (layer.previousSibling) {
-      layer.previousSibling.querySelector(selectQuery).checked = true
+      selectedRadio = layer.previousSibling.querySelector(selectQuery);
     } else if (layer.nextSibling) {
-      layer.nextSibling.querySelector(selectQuery).checked = true
+      selectedRadio = layer.nextSibling.querySelector(selectQuery);
+    }
+    if (selectedRadio) {
+      const id = parseInt(selectedRadio.value, 10);
+      selectedRadio.checked = true;
+      currentLayerActionEvent = getCurrentActionEvent(id);
     }
     layer.parentNode.removeChild(layer);
   }
