@@ -13,6 +13,8 @@ const ActionEnum = {
 };
 
 const LayerActionEnums = {
+  CHANGE_FILL_COLOR: 'cf',
+  CHANGE_LINE_COLOR: 'cl',
   DELETE: 'd',
   SELECT: 's'
 };
@@ -22,6 +24,12 @@ const ActionInputMap = {
   move: ActionEnum.MOVE,
   circle: ActionEnum.CIRCLE,
   rectangle: ActionEnum.RECTANGLE,
+};
+
+const ActionShapeIcon = {
+  [ActionEnum.LINE]: 'linear_scale',
+  [ActionEnum.CIRCLE]: 'lens',
+  [ActionEnum.RECTANGLE]: 'crop_square',
 };
 
 /**
@@ -103,7 +111,7 @@ function drawCanvas(ctx, actionHistory) {
  * @param {!ActionEvent} actionEvent
  */
 function addLayer(actionEvent) {
-  const {id, type} = actionEvent;
+  const {id, type, fillColor, lineColor} = actionEvent;
   const layerId = `action-${id}`;
 
   const li = document.createElement('li');
@@ -126,17 +134,30 @@ function addLayer(actionEvent) {
   radio.checked = true;
   radio.setAttribute('data-action', LayerActionEnums.SELECT);
 
-  const description = document.createElement('span');
-  description.name = 'currentLayer';
+  const fillColorInput = document.createElement('input');
+  fillColorInput.type = 'color';
+  fillColorInput.value = fillColor;
+  fillColorInput.setAttribute('data-id', id);
+  fillColorInput
+      .setAttribute('data-action', LayerActionEnums.CHANGE_FILL_COLOR);
 
-  const paramString = Object.keys(actionEvent)
-      .map((key) => `${key}:${actionEvent[key]}`)
-      .join(' ');
-  description.innerText = `${type}: ${paramString}`;
+  const lineColorInput = document.createElement('input');
+  lineColorInput.type = 'color';
+  lineColorInput.value = lineColor;
+  lineColorInput.setAttribute('data-id', id);
+  lineColorInput
+      .setAttribute('data-action', LayerActionEnums.CHANGE_LINE_COLOR);
+
+  const shape = document.createElement('i');
+  shape.classList.add('material-icons');
+  shape.classList.add('layerShape');
+  shape.innerText = ActionShapeIcon[type] || '';
 
   li.appendChild(radio);
   li.appendChild(close);
-  li.appendChild(description);
+  li.appendChild(shape);
+  li.appendChild(fillColorInput);
+  li.appendChild(lineColorInput);
 
   layersEl.insertBefore(li, layersEl.firstChild);
   currentLayerActionEvent = getCurrentActionEvent(id);
@@ -263,12 +284,21 @@ function onCanvasMouseMove(ev) {
       actionEvent = getActionEvent(offsetX, offsetY);
       break;
     case ActionEnum.MOVE:
+      if (!currentLayerActionEvent) {
+        return;
+      }
       const xOffset = offsetX - startOffsetX;
       const yOffset = offsetY - startOffsetY;
       const startX = currentLayerActionEvent.startX + xOffset;
       const startY = currentLayerActionEvent.startY + yOffset;
-      actionEvent =
-          Object.assign({}, currentLayerActionEvent, {startX, startY});
+      const update = {startX, startY};
+      if (currentLayerActionEvent.endX) {
+        update.endX = currentLayerActionEvent.endX + xOffset;
+      }
+      if (currentLayerActionEvent.endY) {
+        update.endY = currentLayerActionEvent.endY + yOffset;
+      }
+      actionEvent = Object.assign({}, currentLayerActionEvent, update);
       break;
     default:
       return new Error('ActionEnum not handled in mousemove');
@@ -297,17 +327,26 @@ function onCanvasMouseUp(ev) {
       }
 
       actionEvent.id = ++currentLayerId;
-      currentActionHistory.push(actionEvent);
+      addCurrentActionEvent(actionEvent);
       addLayer(/** @type {!ActionEvent} */ actionEvent);
       break;
     case ActionEnum.MOVE:
+      if (!currentLayerActionEvent) {
+        return;
+      }
       const xOffset = offsetX - startOffsetX;
       const yOffset = offsetY - startOffsetY;
       const startX = currentLayerActionEvent.startX + xOffset;
       const startY = currentLayerActionEvent.startY + yOffset;
-
+      const update = {startX, startY};
+      if (currentLayerActionEvent.endX) {
+        update.endX = currentLayerActionEvent.endX + xOffset;
+      }
+      if (currentLayerActionEvent.endY) {
+        update.endY = currentLayerActionEvent.endY + yOffset;
+      }
       // Update the existing ActionEvent
-      Object.assign(currentLayerActionEvent, {startX, startY});
+      Object.assign(currentLayerActionEvent, update);
       // TODO: Update layer
       break;
     default:
@@ -336,8 +375,27 @@ document.querySelector('#actionLineColor').addEventListener('change', (ev) => {
 });
 
 layersEl.addEventListener('change', (ev) => {
-  const id = parseInt(ev.target.value, 10);
+  const {target} = ev;
+  const dataset = target.dataset || {};
+  const id = parseInt(dataset.id, 10);
+  const action = dataset.action;
+
   currentLayerActionEvent = getCurrentActionEvent(id);
+
+  switch (action) {
+    case LayerActionEnums.CHANGE_FILL_COLOR:
+      currentLayerActionEvent.fillColor = target.value;
+      break;
+    case LayerActionEnums.CHANGE_LINE_COLOR:
+      currentLayerActionEvent.lineColor = target.value;
+      break;
+    case LayerActionEnums.SELECT:
+      break;
+    default:
+  }
+
+  clearCanvas(previewCtx);
+  drawCanvas(targetCtx, currentActionHistory);
 }, true);
 
 layersEl.addEventListener('click', (ev) => {

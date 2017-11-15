@@ -9,6 +9,17 @@ body {background: #fafafa;font: 10px 'Raleway', sans-serif;padding: 1rem}
 .previewCanvas {opacity: .9;pointer-events: none;position: absolute}
 
 .sidebar {min-width: 20rem;}
+.action {display: none;}
+.actionLabel {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  display: inline-block;
+  line-height: 0;
+  margin: 0.5rem;
+  padding: 0.5rem;
+}
+.action:checked + label {border: 1px solid #666; box-shadow: 0 2px 2px -1px #666;}
 .layers {list-style: none;margin: 0;padding: 0;}
 .layer {align-items: center;display: flex}
+.layerShape {border: 1px solid #ccc; border-radius: 3px}
 .closeLayer {cursor: pointer}
