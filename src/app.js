@@ -1,8 +1,11 @@
+import Rx from 'rxjs/Rx';
+
 const targetCanvasEl = document.getElementById('targetCanvas');
 const targetCtx = targetCanvasEl.getContext('2d');
 const previewCanvasEl = document.getElementById('previewCanvas');
 const previewCtx = previewCanvasEl.getContext('2d');
 const layersEl = document.getElementById('layers');
+
 
 const ActionEnum = {
   LINE: 'l',
@@ -356,86 +359,93 @@ function onCanvasMouseUp(ev) {
   drawCanvas(targetCtx, currentActionHistory);
 }
 
-targetCanvasEl.addEventListener('mousedown', onCanvasMouseDown);
-targetCanvasEl.addEventListener('mousemove', onCanvasMouseMove);
-targetCanvasEl.addEventListener('mouseup', onCanvasMouseUp);
+Rx.Observable.fromEvent(targetCanvasEl, 'mousedown')
+    .subscribe((ev) => onCanvasMouseDown(ev));
 
-document.querySelectorAll('.actions').forEach((actionSection) => {
-  actionSection.addEventListener('change', (ev) => {
-    setAction(ev.target.value)
-  });
-});
+Rx.Observable.fromEvent(targetCanvasEl, 'mousemove')
+    .throttleTime(16)
+    .subscribe((ev) => onCanvasMouseMove(ev));
 
-document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
-  currentActionFillColor = ev.target.value;
-});
+Rx.Observable.fromEvent(targetCanvasEl, 'mouseup')
+    .subscribe((ev) => onCanvasMouseUp(ev));
 
-document.querySelector('#actionLineColor').addEventListener('change', (ev) => {
-  currentActionLineColor = ev.target.value;
-});
+Rx.Observable.fromEvent(document.querySelectorAll('.actions'), 'change')
+    .subscribe((ev) => setAction(ev.target.value));
 
-layersEl.addEventListener('change', (ev) => {
-  const {target} = ev;
-  const dataset = target.dataset || {};
-  const id = parseInt(dataset.id, 10);
-  const action = dataset.action;
+Rx.Observable.fromEvent(document.querySelector('#actionFillColor'), 'change')
+    .subscribe((ev) => {
+      currentActionFillColor = ev.target.value;
+    });
 
-  currentLayerActionEvent = getCurrentActionEvent(id);
+Rx.Observable.fromEvent(document.querySelector('#actionLineColor'), 'change')
+    .subscribe((ev) => {
+      currentActionLineColor = ev.target.value;
+    });
 
-  switch (action) {
-    case LayerActionEnums.CHANGE_FILL_COLOR:
-      currentLayerActionEvent.fillColor = target.value;
-      break;
-    case LayerActionEnums.CHANGE_LINE_COLOR:
-      currentLayerActionEvent.lineColor = target.value;
-      break;
-    case LayerActionEnums.SELECT:
-      break;
-    default:
-  }
+Rx.Observable.fromEvent(layersEl, 'change', {capture: true})
+    .subscribe((ev) => {
+      const {target} = ev;
+      const dataset = target.dataset || {};
+      const id = parseInt(dataset.id, 10);
+      const action = dataset.action;
 
-  clearCanvas(previewCtx);
-  drawCanvas(targetCtx, currentActionHistory);
-}, true);
+      currentLayerActionEvent = getCurrentActionEvent(id);
 
-layersEl.addEventListener('click', (ev) => {
-  const dataset = ev.target.dataset || {};
-  const id = parseInt(dataset.id, 10);
-  const action = dataset.action;
+      switch (action) {
+        case LayerActionEnums.CHANGE_FILL_COLOR:
+          currentLayerActionEvent.fillColor = target.value;
+          break;
+        case LayerActionEnums.CHANGE_LINE_COLOR:
+          currentLayerActionEvent.lineColor = target.value;
+          break;
+        case LayerActionEnums.SELECT:
+          break;
+        default:
+      }
 
-  if (!id) {
-    return;
-  }
+      clearCanvas(previewCtx);
+      drawCanvas(targetCtx, currentActionHistory);
+    });
 
-  switch (action) {
-    case LayerActionEnums.DELETE:
-      removeLayer(id);
-      removeCurrentActionEvent(id);
-      break;
-    case LayerActionEnums.SELECT:
-      break;
-    default:
-  }
+Rx.Observable.fromEvent(layersEl, 'click', {capture: true})
+    .subscribe((ev) => {
+      const dataset = ev.target.dataset || {};
+      const id = parseInt(dataset.id, 10);
+      const action = dataset.action;
 
-  clearCanvas(previewCtx);
-  drawCanvas(targetCtx, currentActionHistory);
-}, true);
+      if (!id) {
+        return;
+      }
 
-layersEl.addEventListener('mousemove', (ev) => {
-  const id = parseInt(ev.target.dataset.id, 10);
-  const actionEvent = getCurrentActionEvent(id);
-  if (!actionEvent) {
-    return;
-  }
+      switch (action) {
+        case LayerActionEnums.DELETE:
+          removeLayer(id);
+          removeCurrentActionEvent(id);
+          break;
+        case LayerActionEnums.SELECT:
+          break;
+        default:
+      }
 
-  const previewEvent = Object.assign(
-      {},
-      actionEvent,
-      {fillColor: '#f00', lineColor: '#f00'});
-  previewActionHistory = [previewEvent];
-  drawCanvas(previewCtx, previewActionHistory);
-}, true);
+      clearCanvas(previewCtx);
+      drawCanvas(targetCtx, currentActionHistory);
+    });
 
-layersEl.addEventListener('mouseleave', () => {
-  clearCanvas(previewCtx);
-}, true);
+Rx.Observable.fromEvent(layersEl, 'mousemove', {capture: true})
+    .subscribe((ev) => {
+      const id = parseInt(ev.target.dataset.id, 10);
+      const actionEvent = getCurrentActionEvent(id);
+      if (!actionEvent) {
+        return;
+      }
+
+      const previewEvent = Object.assign(
+          {},
+          actionEvent,
+          {fillColor: '#f00', lineColor: '#f00'});
+      previewActionHistory = [previewEvent];
+      drawCanvas(previewCtx, previewActionHistory);
+    });
+
+Rx.Observable.fromEvent(layersEl, 'mouseleave', {capture: true})
+    .subscribe(() => clearCanvas(previewCtx));
