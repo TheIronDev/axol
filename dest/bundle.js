@@ -14248,18 +14248,17 @@ const ActionShapeIcon = {
 /**
  * @typedef {{type: ActionEnum, id: number, startX: number, startY: number}}
  */
-let ActionEvent;
-
+let CanvasItem;
 
 /**
- * @type {!Array<!ActionEvent>}
+ * @type {!Array<!CanvasItem>}
  */
-let currentActionHistory = [];
-let previewActionHistory = [];
+let currentCanvasItemList = [];
+let previewCanvasItemList = [];
 let currentAction = ActionEnum.RECTANGLE;
 let currentActionFillColor = '#000';
 let currentActionLineColor = '#000';
-let currentLayerActionEvent;
+let selectedCanvasItem;
 let currentLayerId = 0;
 let isPerformingAction = false;
 let startOffsetX;
@@ -14275,7 +14274,7 @@ function setAction(actionInput) {
 }
 
 /**
- * Handles clearing a canvas context.
+ * Handles clearing a canvas context. This is really just a helper method.
  * @param {!CanvasRenderingContext2D} ctx
  */
 function clearCanvas(ctx) {
@@ -14283,14 +14282,13 @@ function clearCanvas(ctx) {
 }
 
 /**
- * Draws the canvas given an array of actions.
+ * Draws the canvas given an array of canvasItems.
  * @param {!CanvasRenderingContext2D} ctx
- * @param {!Array<!ActionEvent>} actionHistory
- * @param {boolean} isHighlight
+ * @param {!Array<!CanvasItem>} canvasItemList
  */
-function drawCanvas(ctx, actionHistory) {
+function drawCanvas(ctx, canvasItemList) {
   clearCanvas(ctx);
-  actionHistory.forEach((params) => {
+  canvasItemList.forEach((params) => {
     const {fillColor, lineColor, startX, startY, type} = params;
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
@@ -14321,43 +14319,43 @@ function drawCanvas(ctx, actionHistory) {
 
 /**
  * Updates the layers of actions
- * @param {!ActionEvent} actionEvent
+ * @param {!CanvasItem} canvasItem
  */
-function addLayer(actionEvent) {
-  const {id, type, fillColor, lineColor} = actionEvent;
+function addLayer(canvasItem) {
+  const {id, type, fillColor, lineColor} = canvasItem;
   const layerId = `action-${id}`;
 
   const li = document.createElement('li');
   li.classList.add('layer');
   li.id = layerId;
-  li.setAttribute('data-id', id);
+  li.setAttribute('data-id', '' + id);
 
   const close = document.createElement('i');
   close.classList.add('material-icons');
   close.classList.add('closeLayer');
   close.innerText = 'delete';
-  close.setAttribute('data-id', id);
+  close.setAttribute('data-id', '' + id);
   close.setAttribute('data-action', LayerActionEnums.DELETE);
 
   const radio = document.createElement('input');
   radio.type = 'radio';
   radio.name = 'currentLayer';
   radio.value = id;
-  radio.setAttribute('data-id', id);
+  radio.setAttribute('data-id', '' + id);
   radio.checked = true;
   radio.setAttribute('data-action', LayerActionEnums.SELECT);
 
   const fillColorInput = document.createElement('input');
   fillColorInput.type = 'color';
   fillColorInput.value = fillColor;
-  fillColorInput.setAttribute('data-id', id);
+  fillColorInput.setAttribute('data-id', '' + id);
   fillColorInput
       .setAttribute('data-action', LayerActionEnums.CHANGE_FILL_COLOR);
 
   const lineColorInput = document.createElement('input');
   lineColorInput.type = 'color';
   lineColorInput.value = lineColor;
-  lineColorInput.setAttribute('data-id', id);
+  lineColorInput.setAttribute('data-id', '' + id);
   lineColorInput
       .setAttribute('data-action', LayerActionEnums.CHANGE_LINE_COLOR);
 
@@ -14373,7 +14371,7 @@ function addLayer(actionEvent) {
   li.appendChild(lineColorInput);
 
   layersEl.insertBefore(li, layersEl.firstChild);
-  currentLayerActionEvent = getCurrentActionEvent(id);
+  selectedCanvasItem = getCurrentCanvasItem(id);
 }
 
 /**
@@ -14392,59 +14390,68 @@ function removeLayer (id) {
     if (selectedRadio) {
       const id = parseInt(selectedRadio.value, 10);
       selectedRadio.checked = true;
-      currentLayerActionEvent = getCurrentActionEvent(id);
+      selectedCanvasItem = getCurrentCanvasItem(id);
     }
     layer.parentNode.removeChild(layer);
   }
 }
 
-function addCurrentActionEvent(actionEvent) {
-  currentActionHistory.push(actionEvent);
-}
-
-function addPreviewActionEvent(actionEvent) {
-  previewActionHistory.push(actionEvent);
-}
-
-function removeCurrentActionEvent(id) {
-  currentActionHistory = currentActionHistory
-      .filter((actionEvent) => id !== actionEvent.id);
-}
-
-function getCurrentActionEvent(id) {
-  return currentActionHistory.find((actionEvent) => id === actionEvent.id);
+/**
+ * @param {!CanvasItem} canvasItem
+ */
+function addNewCanvasItem(canvasItem) {
+  currentCanvasItemList.push(canvasItem);
+  addLayer(/** @type {!CanvasItem} */ canvasItem);
 }
 
 /**
- * Returns new action events.
- * @param {number} offsetX
- * @param {number} offsetY
- * @return {?ActionEvent}
+ * @param {number} id
  */
-function getActionEvent(offsetX, offsetY) {
+function removeCurrentCanvasItem(id) {
+  currentCanvasItemList = currentCanvasItemList
+      .filter((canvasItem) => id !== canvasItem.id);
+  removeLayer(id);
+}
+
+/**
+ *
+ * @param {number} id
+ * @returns {?CanvasItem}
+ */
+function getCurrentCanvasItem(id) {
+  return currentCanvasItemList.find((canvasItem) => id === canvasItem.id);
+}
+
+/**
+ * Returns new canvasItem from recorded state.
+ * @param {{startX: number, startY: number, endX: number, endY: number}} state
+ * @return {?CanvasItem}
+ */
+function createNewCanvasItem(state) {
+  const {startX, startY, endX, endY, id} = state;
   const params = {
     fillColor: currentActionFillColor,
-    id: null,
+    id,
     lineColor: currentActionLineColor,
-    startX: startOffsetX,
-    startY: startOffsetY
+    startX,
+    startY
   };
   let type;
 
   switch (currentAction) {
     case ActionEnum.CIRCLE:
       const radius = Math.sqrt(
-          (offsetY - startOffsetY) ** 2 + (offsetX - startOffsetX) ** 2);
+          (endY - startY) ** 2 + (endX - startX) ** 2);
       type = ActionEnum.CIRCLE;
       Object.assign(params, {radius, type});
       break;
     case ActionEnum.LINE:
       type = ActionEnum.LINE;
-      Object.assign(params, {endX: offsetX, endY: offsetY, type});
+      Object.assign(params, {endX, endY, type});
       break;
     case ActionEnum.RECTANGLE:
-      const width = offsetX - startOffsetX;
-      const height = offsetY - startOffsetY;
+      const width = endX - startX;
+      const height = endY - startY;
       type = ActionEnum.RECTANGLE;
       Object.assign(params, {height, type, width});
       break;
@@ -14454,211 +14461,205 @@ function getActionEvent(offsetX, offsetY) {
   if (!type) {
     return null;
   }
-  return /** @type {!ActionEvent} */ params;
+  return /** @type {!CanvasItem} */ params;
 }
 
 /**
- * Handles `mousedown` events on the canvas. This will generally only be used to
- * track the starting x and y offsets.
- * @param {!MouseEvent} ev
+ * @param {{startX: number, startY: number, endX: number, endY: number}} state
+ * @return {?CanvasItem}
  */
-function onCanvasMouseDown(ev) {
-  const {offsetX, offsetY} = ev;
-  isPerformingAction = true;
+function getCanvasItem(state) {
+  const {startX, startY, endX, endY} = state;
+  let canvasItem;
 
   switch (currentAction) {
     case ActionEnum.CIRCLE:
     case ActionEnum.RECTANGLE:
     case ActionEnum.LINE:
+      canvasItem = createNewCanvasItem(state);
+      break;
     case ActionEnum.MOVE:
-      startOffsetX = offsetX;
-      startOffsetY = offsetY;
+      if (!selectedCanvasItem) {
+        return null;
+      }
+      const xOffset = endX - startX;
+      const yOffset = endY - startY;
+      const newStartX = selectedCanvasItem.startX + xOffset;
+      const newStartY = selectedCanvasItem.startY + yOffset;
+      const update = {startX: newStartX, startY: newStartY};
+
+      if (selectedCanvasItem.endX) {
+        update.endX = selectedCanvasItem.endX + xOffset;
+      }
+      if (selectedCanvasItem.endY) {
+        update.endY = selectedCanvasItem.endY + yOffset;
+      }
+      canvasItem = Object.assign({}, selectedCanvasItem, update);
       break;
     default:
-      return new Error('ActionEnum not handled in mousedown');
+      throw new Error('ActionEnum not handled in mousemove');
   }
+
+  return canvasItem;
 }
 
 /**
- * Handles `mousemove` events on the canvas.
- * @param {!MouseEvent} ev
+ * Renders a preview of a canvas item.
  */
-function onCanvasMouseMove(ev) {
-  if (!isPerformingAction) {
+function renderCanvasItemPreview(canvasItem) {
+  if (!canvasItem) {
+    clearCanvas(previewCtx);
     return;
   }
-  const {offsetX, offsetY} = ev;
-  let actionEvent;
-
-  switch (currentAction) {
-    case ActionEnum.CIRCLE:
-    case ActionEnum.RECTANGLE:
-    case ActionEnum.LINE:
-      actionEvent = getActionEvent(offsetX, offsetY);
-      break;
-    case ActionEnum.MOVE:
-      if (!currentLayerActionEvent) {
-        return;
-      }
-      const xOffset = offsetX - startOffsetX;
-      const yOffset = offsetY - startOffsetY;
-      const startX = currentLayerActionEvent.startX + xOffset;
-      const startY = currentLayerActionEvent.startY + yOffset;
-      const update = {startX, startY};
-      if (currentLayerActionEvent.endX) {
-        update.endX = currentLayerActionEvent.endX + xOffset;
-      }
-      if (currentLayerActionEvent.endY) {
-        update.endY = currentLayerActionEvent.endY + yOffset;
-      }
-      actionEvent = Object.assign({}, currentLayerActionEvent, update);
-      break;
-    default:
-      return new Error('ActionEnum not handled in mousemove');
-  }
-
-  previewActionHistory = [actionEvent];
-  drawCanvas(previewCtx, previewActionHistory);
+  previewCanvasItemList = [canvasItem];
+  drawCanvas(previewCtx, previewCanvasItemList);
 }
 
 /**
- * Handles `mouseup` events on the canvas.
- * @param {!MouseEvent} ev
  */
-function onCanvasMouseUp(ev) {
-  const {offsetX, offsetY} = ev;
-  isPerformingAction = false;
-
+function addCanvasItem(canvasItem) {
+  if (!canvasItem) {
+    return;
+  }
   switch (currentAction) {
     case ActionEnum.CIRCLE:
     case ActionEnum.RECTANGLE:
     case ActionEnum.LINE:
-      const actionEvent = getActionEvent(offsetX, offsetY);
-
-      if (!actionEvent) {
-        return;
-      }
-
-      actionEvent.id = ++currentLayerId;
-      addCurrentActionEvent(actionEvent);
-      addLayer(/** @type {!ActionEvent} */ actionEvent);
+      addNewCanvasItem(canvasItem);
       break;
     case ActionEnum.MOVE:
-      if (!currentLayerActionEvent) {
+      if (!selectedCanvasItem) {
         return;
       }
-      const xOffset = offsetX - startOffsetX;
-      const yOffset = offsetY - startOffsetY;
-      const startX = currentLayerActionEvent.startX + xOffset;
-      const startY = currentLayerActionEvent.startY + yOffset;
-      const update = {startX, startY};
-      if (currentLayerActionEvent.endX) {
-        update.endX = currentLayerActionEvent.endX + xOffset;
-      }
-      if (currentLayerActionEvent.endY) {
-        update.endY = currentLayerActionEvent.endY + yOffset;
-      }
-      // Update the existing ActionEvent
-      Object.assign(currentLayerActionEvent, update);
-      // TODO: Update layer
+      // Mutate the original selectedCanvasItem with our newer canvasItem.
+      Object.assign(selectedCanvasItem, canvasItem);
+      break;
+    default:
+  }
+}
+
+function renderCurrentCanvasItemList() {
+  clearCanvas(previewCtx);
+  drawCanvas(targetCtx, currentCanvasItemList);
+}
+
+
+const targetCanvasMousedown$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(targetCanvasEl, 'mousedown');
+
+const docMouseMove$ =__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(document, 'mousemove');
+
+const docMouseUp$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(document, 'mouseup');
+
+/**
+ * Handles drawing a canvas by observing a mousedown, followed by mousemoves,
+ * which will get recorded until mouseup. Essentially its drag-and-drop.
+ */
+const canvasDraw$ = targetCanvasMousedown$
+    .map((ev) => {
+      const {offsetX, offsetY} = ev;
+      return {startX: offsetX, startY: offsetY};
+    })
+    .scan((memo, state) => {
+      // Generate a new id that may or may not be used, we just want a
+      // semblance of uniqueness.
+      return Object.assign({}, state, {id: memo.id + 1});
+    }, {id: 0})
+    .switchMap(({startX, startY, id}) => {
+      return docMouseMove$
+          // Map the mousemove event to a simple object
+          .map((ev) => {
+            const {offsetX: endX, offsetY: endY} = ev;
+            return {endX, endY, startX, startY, id};
+          })
+          // Map the object returned from earlier into a "CanvasItem"
+          .map(getCanvasItem)
+
+          // Render the preview canvas
+          .do(renderCanvasItemPreview)
+          .takeUntil(
+              docMouseUp$
+                  .map((ev) => {
+                    const {offsetX: endX, offsetY: endY} = ev;
+                    return {endX, endY, startX, startY, id};
+                  })
+                  .map(getCanvasItem)
+                  // Render the primary canvas
+                  .do(addCanvasItem)
+                  .do(renderCurrentCanvasItemList)
+          );
+    });
+
+// We won't see any canvas drawing unless we subscribe to the observable.
+canvasDraw$.subscribe();
+
+document.querySelectorAll('.actions').forEach((action) => {
+  action.addEventListener('change', (ev) => setAction(ev.target.value));
+});
+
+document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
+  currentActionFillColor = ev.target.value;
+});
+
+document.querySelector('#actionLineColor').addEventListener('change', (ev) => {
+  currentActionLineColor = ev.target.value;
+});
+
+layersEl.addEventListener('change', (ev) => {
+  const {target} = ev;
+  const dataset = target.dataset || {};
+  const id = parseInt(dataset.id, 10);
+  const action = dataset.action;
+
+  selectedCanvasItem = getCurrentCanvasItem(id);
+
+  switch (action) {
+    case LayerActionEnums.CHANGE_FILL_COLOR:
+      selectedCanvasItem.fillColor = target.value;
+      break;
+    case LayerActionEnums.CHANGE_LINE_COLOR:
+      selectedCanvasItem.lineColor = target.value;
+      break;
+    case LayerActionEnums.SELECT:
       break;
     default:
   }
 
-  clearCanvas(previewCtx);
-  drawCanvas(targetCtx, currentActionHistory);
-}
+  renderCurrentCanvasItemList();
+}, true);
 
-__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(targetCanvasEl, 'mousedown')
-    .subscribe((ev) => onCanvasMouseDown(ev));
+layersEl.addEventListener('click', (ev) => {
+  const dataset = ev.target.dataset || {};
+  const id = parseInt(dataset.id, 10);
+  const action = dataset.action;
 
-__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(targetCanvasEl, 'mousemove')
-    .throttleTime(16)
-    .subscribe((ev) => onCanvasMouseMove(ev));
+  if (!id) {
+    return;
+  }
 
-__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(targetCanvasEl, 'mouseup')
-    .subscribe((ev) => onCanvasMouseUp(ev));
+  switch (action) {
+    case LayerActionEnums.DELETE:
+      removeCurrentCanvasItem(id);
+      break;
+    case LayerActionEnums.SELECT:
+      break;
+    default:
+  }
 
-__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(document.querySelectorAll('.actions'), 'change')
-    .subscribe((ev) => setAction(ev.target.value));
+  renderCurrentCanvasItemList();
+}, true);
 
-__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(document.querySelector('#actionFillColor'), 'change')
-    .subscribe((ev) => {
-      currentActionFillColor = ev.target.value;
-    });
+layersEl.addEventListener('mousemove', (ev) => {
+  const id = parseInt(ev.target.dataset.id, 10);
+  const canvasItem = getCurrentCanvasItem(id);
+  const previewCanvasItem = Object.assign(
+      {},
+      canvasItem,
+      {fillColor: '#f00', lineColor: '#f00'});
+  previewCanvasItemList = [previewCanvasItem];
+  drawCanvas(previewCtx, previewCanvasItemList);
+}, true);
 
-__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(document.querySelector('#actionLineColor'), 'change')
-    .subscribe((ev) => {
-      currentActionLineColor = ev.target.value;
-    });
-
-__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(layersEl, 'change', {capture: true})
-    .subscribe((ev) => {
-      const {target} = ev;
-      const dataset = target.dataset || {};
-      const id = parseInt(dataset.id, 10);
-      const action = dataset.action;
-
-      currentLayerActionEvent = getCurrentActionEvent(id);
-
-      switch (action) {
-        case LayerActionEnums.CHANGE_FILL_COLOR:
-          currentLayerActionEvent.fillColor = target.value;
-          break;
-        case LayerActionEnums.CHANGE_LINE_COLOR:
-          currentLayerActionEvent.lineColor = target.value;
-          break;
-        case LayerActionEnums.SELECT:
-          break;
-        default:
-      }
-
-      clearCanvas(previewCtx);
-      drawCanvas(targetCtx, currentActionHistory);
-    });
-
-__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(layersEl, 'click', {capture: true})
-    .subscribe((ev) => {
-      const dataset = ev.target.dataset || {};
-      const id = parseInt(dataset.id, 10);
-      const action = dataset.action;
-
-      if (!id) {
-        return;
-      }
-
-      switch (action) {
-        case LayerActionEnums.DELETE:
-          removeLayer(id);
-          removeCurrentActionEvent(id);
-          break;
-        case LayerActionEnums.SELECT:
-          break;
-        default:
-      }
-
-      clearCanvas(previewCtx);
-      drawCanvas(targetCtx, currentActionHistory);
-    });
-
-__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(layersEl, 'mousemove', {capture: true})
-    .subscribe((ev) => {
-      const id = parseInt(ev.target.dataset.id, 10);
-      const actionEvent = getCurrentActionEvent(id);
-      if (!actionEvent) {
-        return;
-      }
-
-      const previewEvent = Object.assign(
-          {},
-          actionEvent,
-          {fillColor: '#f00', lineColor: '#f00'});
-      previewActionHistory = [previewEvent];
-      drawCanvas(previewCtx, previewActionHistory);
-    });
-
-__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(layersEl, 'mouseleave', {capture: true})
-    .subscribe(() => clearCanvas(previewCtx));
+layersEl.addEventListener('mouseleave', () => clearCanvas(previewCtx), true);
 
 
 /***/ }),
