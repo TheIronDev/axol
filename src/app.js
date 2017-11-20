@@ -1,39 +1,14 @@
 import Rx from 'rxjs/Rx';
+import ActionEnum from './const/action-enum';
+import LayerActionEnums from './const/layer-action-enum';
+import ActionShapeIcon from './const/action-shape-icon';
+import ActionInputMap from './const/action-input-map';
 
 const targetCanvasEl = document.getElementById('targetCanvas');
 const targetCtx = targetCanvasEl.getContext('2d');
 const previewCanvasEl = document.getElementById('previewCanvas');
 const previewCtx = previewCanvasEl.getContext('2d');
 const layersEl = document.getElementById('layers');
-
-
-const ActionEnum = {
-  LINE: 'l',
-  MOVE: 'm',
-  CIRCLE: 'c',
-  RECTANGLE: 'r',
-  UNKNOWN: 'u'
-};
-
-const LayerActionEnums = {
-  CHANGE_FILL_COLOR: 'cf',
-  CHANGE_LINE_COLOR: 'cl',
-  DELETE: 'd',
-  SELECT: 's'
-};
-
-const ActionInputMap = {
-  line: ActionEnum.LINE,
-  move: ActionEnum.MOVE,
-  circle: ActionEnum.CIRCLE,
-  rectangle: ActionEnum.RECTANGLE,
-};
-
-const ActionShapeIcon = {
-  [ActionEnum.LINE]: 'linear_scale',
-  [ActionEnum.CIRCLE]: 'lens',
-  [ActionEnum.RECTANGLE]: 'crop_square',
-};
 
 /**
  * @typedef {{type: ActionEnum, id: number, startX: number, startY: number}}
@@ -49,10 +24,6 @@ let currentAction = ActionEnum.RECTANGLE;
 let currentActionFillColor = '#000';
 let currentActionLineColor = '#000';
 let selectedCanvasItem;
-let currentLayerId = 0;
-let isPerformingAction = false;
-let startOffsetX;
-let startOffsetY;
 
 /**
  * Sets the current action
