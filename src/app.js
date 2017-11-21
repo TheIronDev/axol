@@ -1,8 +1,14 @@
 import Rx from 'rxjs/Rx';
-import ActionEnum from './const/action-enum';
-import LayerActionEnums from './const/layer-action-enum';
+import CanvasActionEnum from './const/canvas-action-enum';
+import LayerCanvasActionEnums from './const/layer-action-enum';
 import ActionShapeIcon from './const/action-shape-icon';
 import ActionInputMap from './const/action-input-map';
+
+import {addCanvasItem} from "./actions/actions";
+import {store$} from './store';
+
+// For now, I'm just console logging the dispatched state changes.
+store$.subscribe(console.log);
 
 const targetCanvasEl = document.getElementById('targetCanvas');
 const targetCtx = targetCanvasEl.getContext('2d');
@@ -11,7 +17,7 @@ const previewCtx = previewCanvasEl.getContext('2d');
 const layersEl = document.getElementById('layers');
 
 /**
- * @typedef {{type: ActionEnum, id: number, startX: number, startY: number}}
+ * @typedef {{type: CanvasActionEnum, id: number, startX: number, startY: number}}
  */
 let CanvasItem;
 
@@ -20,7 +26,7 @@ let CanvasItem;
  */
 let currentCanvasItemList = [];
 let previewCanvasItemList = [];
-let currentAction = ActionEnum.RECTANGLE;
+let currentAction = CanvasActionEnum.RECTANGLE;
 let currentActionFillColor = '#000';
 let currentActionLineColor = '#000';
 let selectedCanvasItem;
@@ -30,7 +36,7 @@ let selectedCanvasItem;
  * @param {string} actionInput
  */
 function setAction(actionInput) {
-  const action = ActionInputMap[actionInput] || ActionEnum.UNKNOWN;
+  const action = ActionInputMap[actionInput] || CanvasActionEnum.UNKNOWN;
   currentAction = action;
 }
 
@@ -54,14 +60,14 @@ function drawCanvas(ctx, canvasItemList) {
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
     switch (type) {
-      case ActionEnum.CIRCLE:
+      case CanvasActionEnum.CIRCLE:
         const {radius} = params;
         ctx.beginPath();
         ctx.arc(startX, startY, radius, 0, 2 * Math.PI, false);
         ctx.fill();
         ctx.closePath();
         break;
-      case ActionEnum.LINE:
+      case CanvasActionEnum.LINE:
         const {endX, endY} = params;
         ctx.beginPath();
         ctx.moveTo(startX, startY);
@@ -69,7 +75,7 @@ function drawCanvas(ctx, canvasItemList) {
         ctx.stroke();
         ctx.closePath();
         break;
-      case ActionEnum.RECTANGLE:
+      case CanvasActionEnum.RECTANGLE:
         const {width, height} = params;
         ctx.fillRect(startX, startY, width, height);
         break;
@@ -96,7 +102,7 @@ function addLayer(canvasItem) {
   close.classList.add('closeLayer');
   close.innerText = 'delete';
   close.setAttribute('data-id', '' + id);
-  close.setAttribute('data-action', LayerActionEnums.DELETE);
+  close.setAttribute('data-action', LayerCanvasActionEnums.DELETE);
 
   const radio = document.createElement('input');
   radio.type = 'radio';
@@ -104,21 +110,21 @@ function addLayer(canvasItem) {
   radio.value = id;
   radio.setAttribute('data-id', '' + id);
   radio.checked = true;
-  radio.setAttribute('data-action', LayerActionEnums.SELECT);
+  radio.setAttribute('data-action', LayerCanvasActionEnums.SELECT);
 
   const fillColorInput = document.createElement('input');
   fillColorInput.type = 'color';
   fillColorInput.value = fillColor;
   fillColorInput.setAttribute('data-id', '' + id);
   fillColorInput
-      .setAttribute('data-action', LayerActionEnums.CHANGE_FILL_COLOR);
+      .setAttribute('data-action', LayerCanvasActionEnums.CHANGE_FILL_COLOR);
 
   const lineColorInput = document.createElement('input');
   lineColorInput.type = 'color';
   lineColorInput.value = lineColor;
   lineColorInput.setAttribute('data-id', '' + id);
   lineColorInput
-      .setAttribute('data-action', LayerActionEnums.CHANGE_LINE_COLOR);
+      .setAttribute('data-action', LayerCanvasActionEnums.CHANGE_LINE_COLOR);
 
   const shape = document.createElement('i');
   shape.classList.add('material-icons');
@@ -140,7 +146,7 @@ function addLayer(canvasItem) {
  */
 function removeLayer (id) {
   const layer = document.getElementById(`action-${id}`);
-  const selectQuery = `[data-action="${LayerActionEnums.SELECT}"]`;
+  const selectQuery = `[data-action="${LayerCanvasActionEnums.SELECT}"]`;
   let selectedRadio;
   if (layer) {
     if (layer.previousSibling) {
@@ -163,6 +169,7 @@ function removeLayer (id) {
 function addNewCanvasItem(canvasItem) {
   currentCanvasItemList.push(canvasItem);
   addLayer(/** @type {!CanvasItem} */ canvasItem);
+  addCanvasItem(canvasItem);
 }
 
 /**
@@ -200,20 +207,20 @@ function createNewCanvasItem(state) {
   let type;
 
   switch (currentAction) {
-    case ActionEnum.CIRCLE:
+    case CanvasActionEnum.CIRCLE:
       const radius = Math.sqrt(
           (endY - startY) ** 2 + (endX - startX) ** 2);
-      type = ActionEnum.CIRCLE;
+      type = CanvasActionEnum.CIRCLE;
       Object.assign(params, {radius, type});
       break;
-    case ActionEnum.LINE:
-      type = ActionEnum.LINE;
+    case CanvasActionEnum.LINE:
+      type = CanvasActionEnum.LINE;
       Object.assign(params, {endX, endY, type});
       break;
-    case ActionEnum.RECTANGLE:
+    case CanvasActionEnum.RECTANGLE:
       const width = endX - startX;
       const height = endY - startY;
-      type = ActionEnum.RECTANGLE;
+      type = CanvasActionEnum.RECTANGLE;
       Object.assign(params, {height, type, width});
       break;
     default:
@@ -234,12 +241,12 @@ function getCanvasItem(state) {
   let canvasItem;
 
   switch (currentAction) {
-    case ActionEnum.CIRCLE:
-    case ActionEnum.RECTANGLE:
-    case ActionEnum.LINE:
+    case CanvasActionEnum.CIRCLE:
+    case CanvasActionEnum.RECTANGLE:
+    case CanvasActionEnum.LINE:
       canvasItem = createNewCanvasItem(state);
       break;
-    case ActionEnum.MOVE:
+    case CanvasActionEnum.MOVE:
       if (!selectedCanvasItem) {
         return null;
       }
@@ -258,7 +265,7 @@ function getCanvasItem(state) {
       canvasItem = Object.assign({}, selectedCanvasItem, update);
       break;
     default:
-      throw new Error('ActionEnum not handled in mousemove');
+      throw new Error('CanvasActionEnum not handled in mousemove');
   }
 
   return canvasItem;
@@ -278,17 +285,18 @@ function renderCanvasItemPreview(canvasItem) {
 
 /**
  */
-function addCanvasItem(canvasItem) {
+function addOrUpdateCanvasItem(canvasItem) {
   if (!canvasItem) {
     return;
   }
+  let newCanvasItem;
   switch (currentAction) {
-    case ActionEnum.CIRCLE:
-    case ActionEnum.RECTANGLE:
-    case ActionEnum.LINE:
+    case CanvasActionEnum.CIRCLE:
+    case CanvasActionEnum.RECTANGLE:
+    case CanvasActionEnum.LINE:
       addNewCanvasItem(canvasItem);
       break;
-    case ActionEnum.MOVE:
+    case CanvasActionEnum.MOVE:
       if (!selectedCanvasItem) {
         return;
       }
@@ -345,7 +353,7 @@ const canvasDraw$ = targetCanvasMousedown$
                   })
                   .map(getCanvasItem)
                   // Render the primary canvas
-                  .do(addCanvasItem)
+                  .do(addOrUpdateCanvasItem)
                   .do(renderCurrentCanvasItemList)
           );
     });
@@ -374,13 +382,13 @@ layersEl.addEventListener('change', (ev) => {
   selectedCanvasItem = getCurrentCanvasItem(id);
 
   switch (action) {
-    case LayerActionEnums.CHANGE_FILL_COLOR:
+    case LayerCanvasActionEnums.CHANGE_FILL_COLOR:
       selectedCanvasItem.fillColor = target.value;
       break;
-    case LayerActionEnums.CHANGE_LINE_COLOR:
+    case LayerCanvasActionEnums.CHANGE_LINE_COLOR:
       selectedCanvasItem.lineColor = target.value;
       break;
-    case LayerActionEnums.SELECT:
+    case LayerCanvasActionEnums.SELECT:
       break;
     default:
   }
@@ -398,10 +406,10 @@ layersEl.addEventListener('click', (ev) => {
   }
 
   switch (action) {
-    case LayerActionEnums.DELETE:
+    case LayerCanvasActionEnums.DELETE:
       removeCurrentCanvasItem(id);
       break;
-    case LayerActionEnums.SELECT:
+    case LayerCanvasActionEnums.SELECT:
       break;
     default:
   }

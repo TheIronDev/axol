@@ -5154,21 +5154,7 @@ exports.Timestamp = Timestamp;
 //# sourceMappingURL=timestamp.js.map
 
 /***/ }),
-/* 56 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-
-/* harmony default export */ __webpack_exports__["a"] = ({
-  LINE: 'l',
-  MOVE: 'm',
-  CIRCLE: 'c',
-  RECTANGLE: 'r',
-  UNKNOWN: 'u'
-});
-
-
-/***/ }),
+/* 56 */,
 /* 57 */
 /***/ (function(module, exports) {
 
@@ -14224,15 +14210,23 @@ exports.VirtualAction = VirtualAction;
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__ = __webpack_require__(162);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_action_enum__ = __webpack_require__(56);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__ = __webpack_require__(461);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__ = __webpack_require__(458);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__const_action_shape_icon__ = __webpack_require__(459);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__const_action_input_map__ = __webpack_require__(460);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__actions_actions__ = __webpack_require__(464);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__store__ = __webpack_require__(463);
 
 
 
 
 
+
+
+
+
+// For now, I'm just console logging the dispatched state changes.
+__WEBPACK_IMPORTED_MODULE_6__store__["b" /* store$ */].subscribe(console.log);
 
 const targetCanvasEl = document.getElementById('targetCanvas');
 const targetCtx = targetCanvasEl.getContext('2d');
@@ -14241,7 +14235,7 @@ const previewCtx = previewCanvasEl.getContext('2d');
 const layersEl = document.getElementById('layers');
 
 /**
- * @typedef {{type: ActionEnum, id: number, startX: number, startY: number}}
+ * @typedef {{type: CanvasActionEnum, id: number, startX: number, startY: number}}
  */
 let CanvasItem;
 
@@ -14250,7 +14244,7 @@ let CanvasItem;
  */
 let currentCanvasItemList = [];
 let previewCanvasItemList = [];
-let currentAction = __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].RECTANGLE;
+let currentAction = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE;
 let currentActionFillColor = '#000';
 let currentActionLineColor = '#000';
 let selectedCanvasItem;
@@ -14260,7 +14254,7 @@ let selectedCanvasItem;
  * @param {string} actionInput
  */
 function setAction(actionInput) {
-  const action = __WEBPACK_IMPORTED_MODULE_4__const_action_input_map__["a" /* default */][actionInput] || __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].UNKNOWN;
+  const action = __WEBPACK_IMPORTED_MODULE_4__const_action_input_map__["a" /* default */][actionInput] || __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].UNKNOWN;
   currentAction = action;
 }
 
@@ -14284,14 +14278,14 @@ function drawCanvas(ctx, canvasItemList) {
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
     switch (type) {
-      case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].CIRCLE:
+      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
         const {radius} = params;
         ctx.beginPath();
         ctx.arc(startX, startY, radius, 0, 2 * Math.PI, false);
         ctx.fill();
         ctx.closePath();
         break;
-      case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].LINE:
+      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
         const {endX, endY} = params;
         ctx.beginPath();
         ctx.moveTo(startX, startY);
@@ -14299,7 +14293,7 @@ function drawCanvas(ctx, canvasItemList) {
         ctx.stroke();
         ctx.closePath();
         break;
-      case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].RECTANGLE:
+      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
         const {width, height} = params;
         ctx.fillRect(startX, startY, width, height);
         break;
@@ -14393,6 +14387,7 @@ function removeLayer (id) {
 function addNewCanvasItem(canvasItem) {
   currentCanvasItemList.push(canvasItem);
   addLayer(/** @type {!CanvasItem} */ canvasItem);
+  Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["a" /* addCanvasItem */])(canvasItem);
 }
 
 /**
@@ -14430,20 +14425,20 @@ function createNewCanvasItem(state) {
   let type;
 
   switch (currentAction) {
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].CIRCLE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
       const radius = Math.sqrt(
           (endY - startY) ** 2 + (endX - startX) ** 2);
-      type = __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].CIRCLE;
+      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE;
       Object.assign(params, {radius, type});
       break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].LINE:
-      type = __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].LINE;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
+      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE;
       Object.assign(params, {endX, endY, type});
       break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].RECTANGLE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
       const width = endX - startX;
       const height = endY - startY;
-      type = __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].RECTANGLE;
+      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE;
       Object.assign(params, {height, type, width});
       break;
     default:
@@ -14464,12 +14459,12 @@ function getCanvasItem(state) {
   let canvasItem;
 
   switch (currentAction) {
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].CIRCLE:
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].RECTANGLE:
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].LINE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
       canvasItem = createNewCanvasItem(state);
       break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].MOVE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
       if (!selectedCanvasItem) {
         return null;
       }
@@ -14488,7 +14483,7 @@ function getCanvasItem(state) {
       canvasItem = Object.assign({}, selectedCanvasItem, update);
       break;
     default:
-      throw new Error('ActionEnum not handled in mousemove');
+      throw new Error('CanvasActionEnum not handled in mousemove');
   }
 
   return canvasItem;
@@ -14508,17 +14503,18 @@ function renderCanvasItemPreview(canvasItem) {
 
 /**
  */
-function addCanvasItem(canvasItem) {
+function addOrUpdateCanvasItem(canvasItem) {
   if (!canvasItem) {
     return;
   }
+  let newCanvasItem;
   switch (currentAction) {
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].CIRCLE:
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].RECTANGLE:
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].LINE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
       addNewCanvasItem(canvasItem);
       break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_action_enum__["a" /* default */].MOVE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
       if (!selectedCanvasItem) {
         return;
       }
@@ -14575,7 +14571,7 @@ const canvasDraw$ = targetCanvasMousedown$
                   })
                   .map(getCanvasItem)
                   // Render the primary canvas
-                  .do(addCanvasItem)
+                  .do(addOrUpdateCanvasItem)
                   .do(renderCurrentCanvasItemList)
           );
     });
@@ -25947,13 +25943,13 @@ exports.zipAll = zipAll_1.zipAll;
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__action_enum__ = __webpack_require__(56);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__ = __webpack_require__(461);
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
-  [__WEBPACK_IMPORTED_MODULE_0__action_enum__["a" /* default */].LINE]: 'linear_scale',
-  [__WEBPACK_IMPORTED_MODULE_0__action_enum__["a" /* default */].CIRCLE]: 'lens',
-  [__WEBPACK_IMPORTED_MODULE_0__action_enum__["a" /* default */].RECTANGLE]: 'crop_square',
+  [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].LINE]: 'linear_scale',
+  [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].CIRCLE]: 'lens',
+  [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].RECTANGLE]: 'crop_square',
 });
 
 
@@ -25962,14 +25958,148 @@ exports.zipAll = zipAll_1.zipAll;
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__action_enum__ = __webpack_require__(56);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__ = __webpack_require__(461);
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
-  line: __WEBPACK_IMPORTED_MODULE_0__action_enum__["a" /* default */].LINE,
-  move: __WEBPACK_IMPORTED_MODULE_0__action_enum__["a" /* default */].MOVE,
-  circle: __WEBPACK_IMPORTED_MODULE_0__action_enum__["a" /* default */].CIRCLE,
-  rectangle: __WEBPACK_IMPORTED_MODULE_0__action_enum__["a" /* default */].RECTANGLE,
+  line: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].LINE,
+  move: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].MOVE,
+  circle: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].CIRCLE,
+  rectangle: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].RECTANGLE,
+});
+
+/***/ }),
+/* 461 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+
+/* harmony default export */ __webpack_exports__["a"] = ({
+  LINE: 'l',
+  MOVE: 'm',
+  CIRCLE: 'c',
+  RECTANGLE: 'r',
+  UNKNOWN: 'u'
+});
+
+
+/***/ }),
+/* 462 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony export (immutable) */ __webpack_exports__["a"] = dispatcher;
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__store__ = __webpack_require__(463);
+
+
+/**
+ * Dispatcher function, a high order function that dispatches actions to the
+ * store.
+ * @param {!Function} fn
+ * @returns {function(...[*])}
+ */
+function dispatcher(fn) {
+  return (...args) => {
+    __WEBPACK_IMPORTED_MODULE_0__store__["a" /* action$ */].next(fn(...args));
+  };
+}
+
+/***/ }),
+/* 463 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__ = __webpack_require__(162);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__ = __webpack_require__(461);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__const_action__ = __webpack_require__(465);
+
+
+
+
+const {ADD_CANVAS_ITEM} = __WEBPACK_IMPORTED_MODULE_2__const_action__["a" /* default */];
+
+const initialState = {
+  currentCanvasItemList: [],
+  previewCanvasItemList: [],
+  currentAction: __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE,
+  currentActionFillColor: '#000',
+  currentActionLineColor: '#000',
+  selectedCanvasItem: null
+};
+
+/**
+ * Reducer function used to handle the different type of switch-case events.
+ * @param state
+ * @param dispatchedAction
+ * @returns {*}
+ */
+const reducer = (state, dispatchedAction) => {
+  const {type, payload} = dispatchedAction;
+  switch (type) {
+    case ADD_CANVAS_ITEM:
+      const currentCanvasItemList =
+          [...state.currentCanvasItemList, payload];
+      return Object.assign(
+          {},
+          state,
+          {currentCanvasItemList});
+    default:
+      return state;
+  }
+};
+
+// The ActionSubject is the entry point for our flux code to flow through.
+const actionSubject$ = new __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Subject();
+
+// The storeObserver is used to pipe dispatched events to anything that
+// subscribes to the store. Effectively we will have something like:
+// store.subscribe(renderAndUpdateUI);
+const storeObserver$ = actionSubject$
+    .startWith(initialState)
+    .scan(reducer);
+
+const action$ = actionSubject$;
+/* harmony export (immutable) */ __webpack_exports__["a"] = action$;
+
+const store$ = storeObserver$;
+/* harmony export (immutable) */ __webpack_exports__["b"] = store$;
+
+
+
+/***/ }),
+/* 464 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__const_action__ = __webpack_require__(465);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__dispatcher__ = __webpack_require__(462);
+
+
+
+const {ADD_CANVAS_ITEM} = __WEBPACK_IMPORTED_MODULE_0__const_action__["a" /* default */];
+
+/**
+ * Adds a canvasItem to the currentCanvasItemList.
+ * @param {!CanvasItem} canvasItem
+ */
+const addCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* default */])((canvasItem) => {
+  return {
+    type: ADD_CANVAS_ITEM,
+    payload: canvasItem
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["a"] = addCanvasItem;
+
+
+
+/***/ }),
+/* 465 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony default export */ __webpack_exports__["a"] = ({
+  ADD_CANVAS_ITEM: 'aci'
 });
 
 /***/ })

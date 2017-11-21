@@ -1,4 +1,4 @@
-import ActionEnum from './action-enum';
+import ActionEnum from './canvas-action-enum';
 
 export default {
   [ActionEnum.LINE]: 'linear_scale',
