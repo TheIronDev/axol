@@ -14560,6 +14560,7 @@ const canvasDraw$ = targetCanvasMousedown$
           })
           // Map the object returned from earlier into a "CanvasItem"
           .map(getCanvasItem)
+          .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["b" /* setPreviewCanvasItem */])
 
           // Render the preview canvas
           .do(renderCanvasItemPreview)
@@ -14572,6 +14573,7 @@ const canvasDraw$ = targetCanvasMousedown$
                   .map(getCanvasItem)
                   // Render the primary canvas
                   .do(addOrUpdateCanvasItem)
+                  .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["c" /* unsetPreviewCanvasItem */])
                   .do(renderCurrentCanvasItemList)
           );
     });
@@ -26017,7 +26019,7 @@ function dispatcher(fn) {
 
 
 
-const {ADD_CANVAS_ITEM} = __WEBPACK_IMPORTED_MODULE_2__const_action__["a" /* default */];
+const {ADD_CANVAS_ITEM, SET_PREVIEW_CANVAS_ITEM, UNSET_PREVIEW_CANVAS_ITEM} = __WEBPACK_IMPORTED_MODULE_2__const_action__["a" /* default */];
 
 const initialState = {
   currentCanvasItemList: [],
@@ -26036,14 +26038,17 @@ const initialState = {
  */
 const reducer = (state, dispatchedAction) => {
   const {type, payload} = dispatchedAction;
+  const newState = Object.assign({}, state);
   switch (type) {
     case ADD_CANVAS_ITEM:
       const currentCanvasItemList =
           [...state.currentCanvasItemList, payload];
-      return Object.assign(
-          {},
-          state,
-          {currentCanvasItemList});
+      return Object.assign(newState, {currentCanvasItemList});
+    case SET_PREVIEW_CANVAS_ITEM:
+      const previewCanvasItemList = [payload];
+      return Object.assign(newState, {previewCanvasItemList});
+    case UNSET_PREVIEW_CANVAS_ITEM:
+      return Object.assign(newState, {previewCanvasItemList: []});
     default:
       return state;
   }
@@ -26077,7 +26082,7 @@ const store$ = storeObserver$;
 
 
 
-const {ADD_CANVAS_ITEM} = __WEBPACK_IMPORTED_MODULE_0__const_action__["a" /* default */];
+const {ADD_CANVAS_ITEM, SET_PREVIEW_CANVAS_ITEM, UNSET_PREVIEW_CANVAS_ITEM} = __WEBPACK_IMPORTED_MODULE_0__const_action__["a" /* default */];
 
 /**
  * Adds a canvasItem to the currentCanvasItemList.
@@ -26092,6 +26097,31 @@ const addCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* de
 /* harmony export (immutable) */ __webpack_exports__["a"] = addCanvasItem;
 
 
+/**
+ * Adds a canvasItem to the previewCanvasItemList.
+ * @param {!CanvasItem} canvasItem
+ */
+const setPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* default */])((canvasItem) => {
+  return {
+    type: SET_PREVIEW_CANVAS_ITEM,
+    payload: canvasItem
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["b"] = setPreviewCanvasItem;
+
+
+/**
+ * Clears the previewCanvasItemList.
+ */
+const unsetPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* default */])(() => {
+  return {
+    type: UNSET_PREVIEW_CANVAS_ITEM,
+    payload: null
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["c"] = unsetPreviewCanvasItem;
+
+
 
 /***/ }),
 /* 465 */
@@ -26099,7 +26129,9 @@ const addCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* de
 
 "use strict";
 /* harmony default export */ __webpack_exports__["a"] = ({
-  ADD_CANVAS_ITEM: 'aci'
+  ADD_CANVAS_ITEM: 'aci',
+  SET_PREVIEW_CANVAS_ITEM: 'spci',
+  UNSET_PREVIEW_CANVAS_ITEM: 'upci'
 });
 
 /***/ })

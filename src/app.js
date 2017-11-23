@@ -4,7 +4,7 @@ import LayerCanvasActionEnums from './const/layer-action-enum';
 import ActionShapeIcon from './const/action-shape-icon';
 import ActionInputMap from './const/action-input-map';
 
-import {addCanvasItem} from "./actions/actions";
+import {addCanvasItem, setPreviewCanvasItem, unsetPreviewCanvasItem} from "./actions/actions";
 import {store$} from './store';
 
 // For now, I'm just console logging the dispatched state changes.
@@ -342,6 +342,7 @@ const canvasDraw$ = targetCanvasMousedown$
           })
           // Map the object returned from earlier into a "CanvasItem"
           .map(getCanvasItem)
+          .do(setPreviewCanvasItem)
 
           // Render the preview canvas
           .do(renderCanvasItemPreview)
@@ -354,6 +355,7 @@ const canvasDraw$ = targetCanvasMousedown$
                   .map(getCanvasItem)
                   // Render the primary canvas
                   .do(addOrUpdateCanvasItem)
+                  .do(unsetPreviewCanvasItem)
                   .do(renderCurrentCanvasItemList)
           );
     });
