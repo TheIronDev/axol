@@ -14286,10 +14286,10 @@ function drawCanvas(ctx, canvasItemList) {
         ctx.closePath();
         break;
       case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
-        const {endX, endY} = params;
+        const {xOffset, yOffset} = params;
         ctx.beginPath();
         ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
+        ctx.lineTo(startX + xOffset, startY + yOffset);
         ctx.stroke();
         ctx.closePath();
         break;
@@ -14409,7 +14409,7 @@ function getCurrentCanvasItem(id) {
 }
 
 /**
- * Returns new canvasItem from recorded state.
+ * Returns new canvasItem from recorded mousedown and mousemove/up states.
  * @param {{startX: number, startY: number, endX: number, endY: number}} state
  * @return {?CanvasItem}
  */
@@ -14433,7 +14433,9 @@ function createNewCanvasItem(state) {
       break;
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
       type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE;
-      Object.assign(params, {endX, endY, type});
+      const xOffset = endX - startX;
+      const yOffset = endY - startY;
+      Object.assign(params, {xOffset, yOffset, type});
       break;
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
       const width = endX - startX;
@@ -14474,12 +14476,6 @@ function getCanvasItem(state) {
       const newStartY = selectedCanvasItem.startY + yOffset;
       const update = {startX: newStartX, startY: newStartY};
 
-      if (selectedCanvasItem.endX) {
-        update.endX = selectedCanvasItem.endX + xOffset;
-      }
-      if (selectedCanvasItem.endY) {
-        update.endY = selectedCanvasItem.endY + yOffset;
-      }
       canvasItem = Object.assign({}, selectedCanvasItem, update);
       break;
     default:
