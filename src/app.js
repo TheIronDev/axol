@@ -2,13 +2,21 @@ import Rx from 'rxjs/Rx';
 import CanvasActionEnum from './const/canvas-action-enum';
 import LayerCanvasActionEnums from './const/layer-action-enum';
 import ActionShapeIcon from './const/action-shape-icon';
-import ActionInputMap from './const/action-input-map';
 
-import {addCanvasItem, removeCanvasItem, setPreviewCanvasItem, unsetPreviewCanvasItem} from "./actions/actions";
+import {
+  addOrModifyCanvasItem,
+  highlightCanvasItem,
+  modifyCanvasItem,
+  removeCanvasItem,
+  setPreviewCanvasItem,
+  setSelectedCanvasItem,
+  unsetPreviewCanvasItem,
+  updateCurrentAction,
+  updateCurrentActionFill,
+  updateCurrentActionLine
+} from "./actions/actions";
 import {store$} from './store';
 
-// For now, I'm just console logging the dispatched state changes.
-store$.subscribe(console.log);
 
 const targetCanvasEl = document.getElementById('targetCanvas');
 const targetCtx = targetCanvasEl.getContext('2d');
@@ -16,29 +24,19 @@ const previewCanvasEl = document.getElementById('previewCanvas');
 const previewCtx = previewCanvasEl.getContext('2d');
 const layersEl = document.getElementById('layers');
 
+store$.subscribe((state) => {
+  clearCanvas(previewCtx);
+  clearCanvas(targetCtx);
+  drawCanvas(previewCtx, state.previewCanvasItemList);
+  drawCanvas(targetCtx, state.currentCanvasItemList);
+  renderLayers(state.currentCanvasItemList, state.selectedCanvasItemId);
+});
+
 /**
  * @typedef {{type: CanvasActionEnum, id: number, startX: number, startY: number}}
  */
 let CanvasItem;
 
-/**
- * @type {!Array<!CanvasItem>}
- */
-let currentCanvasItemList = [];
-let previewCanvasItemList = [];
-let currentAction = CanvasActionEnum.RECTANGLE;
-let currentActionFillColor = '#000';
-let currentActionLineColor = '#000';
-let selectedCanvasItem;
-
-/**
- * Sets the current action
- * @param {string} actionInput
- */
-function setAction(actionInput) {
-  const action = ActionInputMap[actionInput] || CanvasActionEnum.UNKNOWN;
-  currentAction = action;
-}
 
 /**
  * Handles clearing a canvas context. This is really just a helper method.
@@ -56,6 +54,9 @@ function clearCanvas(ctx) {
 function drawCanvas(ctx, canvasItemList) {
   clearCanvas(ctx);
   canvasItemList.forEach((params) => {
+    if (!params) {
+      return;
+    }
     const {fillColor, lineColor, startX, startY, type} = params;
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
@@ -88,7 +89,7 @@ function drawCanvas(ctx, canvasItemList) {
  * Updates the layers of actions
  * @param {!CanvasItem} canvasItem
  */
-function addLayer(canvasItem) {
+function createLayer(canvasItem) {
   const {id, type, fillColor, lineColor} = canvasItem;
   const layerId = `action-${id}`;
 
@@ -108,6 +109,7 @@ function addLayer(canvasItem) {
   radio.type = 'radio';
   radio.name = 'currentLayer';
   radio.value = id;
+  radio.id = `selected-${id}`;
   radio.setAttribute('data-id', '' + id);
   radio.checked = true;
   radio.setAttribute('data-action', LayerCanvasActionEnums.SELECT);
@@ -136,183 +138,49 @@ function addLayer(canvasItem) {
   li.appendChild(shape);
   li.appendChild(fillColorInput);
   li.appendChild(lineColorInput);
-
-  layersEl.insertBefore(li, layersEl.firstChild);
-  selectedCanvasItem = getCurrentCanvasItem(id);
+  return li;
 }
 
-/**
- * @param {number} id
- */
-function removeLayer (id) {
-  const layer = document.getElementById(`action-${id}`);
-  const selectQuery = `[data-action="${LayerCanvasActionEnums.SELECT}"]`;
-  let selectedRadio;
-  if (layer) {
-    if (layer.previousSibling) {
-      selectedRadio = layer.previousSibling.querySelector(selectQuery);
-    } else if (layer.nextSibling) {
-      selectedRadio = layer.nextSibling.querySelector(selectQuery);
-    }
-    if (selectedRadio) {
-      const id = parseInt(selectedRadio.value, 10);
-      selectedRadio.checked = true;
-      selectedCanvasItem = getCurrentCanvasItem(id);
-    }
-    layer.parentNode.removeChild(layer);
-  }
-}
 
-/**
- * @param {!CanvasItem} canvasItem
- */
-function addNewCanvasItem(canvasItem) {
-  currentCanvasItemList.push(canvasItem);
-  addLayer(/** @type {!CanvasItem} */ canvasItem);
-  addCanvasItem(canvasItem);
-}
-
-/**
- * @param {number} id
- */
-function removeCurrentCanvasItem(id) {
-  currentCanvasItemList = currentCanvasItemList
-      .filter((canvasItem) => id !== canvasItem.id);
-  removeLayer(id);
-}
-
-/**
- *
- * @param {number} id
- * @returns {?CanvasItem}
- */
-function getCurrentCanvasItem(id) {
-  return currentCanvasItemList.find((canvasItem) => id === canvasItem.id);
-}
-
-/**
- * Returns new canvasItem from recorded mousedown and mousemove/up states.
- * @param {{startX: number, startY: number, endX: number, endY: number}} state
- * @return {?CanvasItem}
- */
-function createNewCanvasItem(state) {
-  const {startX, startY, endX, endY, id} = state;
-  const params = {
-    fillColor: currentActionFillColor,
-    id,
-    lineColor: currentActionLineColor,
-    startX,
-    startY
-  };
-  let type;
-
-  switch (currentAction) {
-    case CanvasActionEnum.CIRCLE:
-      const radius = Math.sqrt(
-          (endY - startY) ** 2 + (endX - startX) ** 2);
-      type = CanvasActionEnum.CIRCLE;
-      Object.assign(params, {radius, type});
-      break;
-    case CanvasActionEnum.LINE:
-      type = CanvasActionEnum.LINE;
-      const xOffset = endX - startX;
-      const yOffset = endY - startY;
-      Object.assign(params, {xOffset, yOffset, type});
-      break;
-    case CanvasActionEnum.RECTANGLE:
-      const width = endX - startX;
-      const height = endY - startY;
-      type = CanvasActionEnum.RECTANGLE;
-      Object.assign(params, {height, type, width});
-      break;
-    default:
-  }
-
-  if (!type) {
-    return null;
-  }
-  return /** @type {!CanvasItem} */ params;
-}
-
-/**
- * @param {{startX: number, startY: number, endX: number, endY: number}} state
- * @return {?CanvasItem}
- */
-function getCanvasItem(state) {
-  const {startX, startY, endX, endY} = state;
-  let canvasItem;
-
-  switch (currentAction) {
-    case CanvasActionEnum.CIRCLE:
-    case CanvasActionEnum.RECTANGLE:
-    case CanvasActionEnum.LINE:
-      canvasItem = createNewCanvasItem(state);
-      break;
-    case CanvasActionEnum.MOVE:
-      if (!selectedCanvasItem) {
-        return null;
+function renderLayers(canvasItemList, selectedCanvasItemId) {
+  // Add canvasItem layers if they don't already exist.
+  canvasItemList.forEach((canvasItem) => {
+    if (!document.getElementById(`action-${canvasItem.id}`)) {
+      const newLayer = createLayer(canvasItem);
+      if (layersEl.firstElementChild) {
+        layersEl.insertBefore(newLayer, layersEl.firstElementChild);
+      } else {
+        layersEl.appendChild(newLayer);
       }
-      const xOffset = endX - startX;
-      const yOffset = endY - startY;
-      const newStartX = selectedCanvasItem.startX + xOffset;
-      const newStartY = selectedCanvasItem.startY + yOffset;
-      const update = {startX: newStartX, startY: newStartY};
+    }
+  });
 
-      canvasItem = Object.assign({}, selectedCanvasItem, update);
-      break;
-    default:
-      throw new Error('CanvasActionEnum not handled in mousemove');
+  // Gather a list of the ids
+  const ids = canvasItemList.reduce((memo, {id}) => {
+    memo[id] = true;
+    return memo;
+  }, {});
+
+  // Remove layers that are no longer in the list.
+  let child = layersEl.firstElementChild;
+  let nextChild;
+  while (child) {
+    nextChild = child.nextSibling;
+    if (!ids[child.dataset.id]) {
+      child.parentNode.removeChild(child);
+    }
+    child = nextChild;
   }
 
-  return canvasItem;
-}
-
-/**
- * Renders a preview of a canvas item.
- */
-function renderCanvasItemPreview(canvasItem) {
-  if (!canvasItem) {
-    clearCanvas(previewCtx);
-    return;
-  }
-  previewCanvasItemList = [canvasItem];
-  drawCanvas(previewCtx, previewCanvasItemList);
-}
-
-/**
- */
-function addOrUpdateCanvasItem(canvasItem) {
-  if (!canvasItem) {
-    return;
-  }
-  let newCanvasItem;
-  switch (currentAction) {
-    case CanvasActionEnum.CIRCLE:
-    case CanvasActionEnum.RECTANGLE:
-    case CanvasActionEnum.LINE:
-      addNewCanvasItem(canvasItem);
-      break;
-    case CanvasActionEnum.MOVE:
-      if (!selectedCanvasItem) {
-        return;
-      }
-      // Mutate the original selectedCanvasItem with our newer canvasItem.
-      Object.assign(selectedCanvasItem, canvasItem);
-      break;
-    default:
+  // Set value of the selected canvas item (in case it was deleted.)
+  const selected = document.getElementById(`#selected-${selectedCanvasItemId}`);
+  if (selected) {
+    selected.checked = true;
   }
 }
-
-function renderCurrentCanvasItemList() {
-  clearCanvas(previewCtx);
-  drawCanvas(targetCtx, currentCanvasItemList);
-}
-
 
 const targetCanvasMousedown$ = Rx.Observable.fromEvent(targetCanvasEl, 'mousedown');
-
-const docMouseMove$ =Rx.Observable.fromEvent(document, 'mousemove');
-
+const docMouseMove$ = Rx.Observable.fromEvent(document, 'mousemove');
 const docMouseUp$ = Rx.Observable.fromEvent(document, 'mouseup');
 
 /**
@@ -336,23 +204,17 @@ const canvasDraw$ = targetCanvasMousedown$
             const {offsetX: endX, offsetY: endY} = ev;
             return {endX, endY, startX, startY, id};
           })
-          // Map the object returned from earlier into a "CanvasItem"
-          .map(getCanvasItem)
           .do(setPreviewCanvasItem)
 
-          // Render the preview canvas
-          .do(renderCanvasItemPreview)
           .takeUntil(
               docMouseUp$
                   .map((ev) => {
                     const {offsetX: endX, offsetY: endY} = ev;
                     return {endX, endY, startX, startY, id};
                   })
-                  .map(getCanvasItem)
                   // Render the primary canvas
-                  .do(addOrUpdateCanvasItem)
+                  .do(addOrModifyCanvasItem)
                   .do(unsetPreviewCanvasItem)
-                  .do(renderCurrentCanvasItemList)
           );
     });
 
@@ -360,15 +222,15 @@ const canvasDraw$ = targetCanvasMousedown$
 canvasDraw$.subscribe();
 
 document.querySelectorAll('.actions').forEach((action) => {
-  action.addEventListener('change', (ev) => setAction(ev.target.value));
+  action.addEventListener('change', (ev) => updateCurrentAction(ev.target.value));
 });
 
 document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
-  currentActionFillColor = ev.target.value;
+  updateCurrentActionFill(ev.target.value);
 });
 
 document.querySelector('#actionLineColor').addEventListener('change', (ev) => {
-  currentActionLineColor = ev.target.value;
+  updateCurrentActionLine(ev.target.value);
 });
 
 layersEl.addEventListener('change', (ev) => {
@@ -377,21 +239,17 @@ layersEl.addEventListener('change', (ev) => {
   const id = parseInt(dataset.id, 10);
   const action = dataset.action;
 
-  selectedCanvasItem = getCurrentCanvasItem(id);
-
   switch (action) {
     case LayerCanvasActionEnums.CHANGE_FILL_COLOR:
-      selectedCanvasItem.fillColor = target.value;
+      modifyCanvasItem({fillColor: target.value, id});
       break;
     case LayerCanvasActionEnums.CHANGE_LINE_COLOR:
-      selectedCanvasItem.lineColor = target.value;
+      modifyCanvasItem({id, lineColor: target.value});
       break;
     case LayerCanvasActionEnums.SELECT:
       break;
     default:
   }
-
-  renderCurrentCanvasItemList();
 }, true);
 
 layersEl.addEventListener('click', (ev) => {
@@ -405,26 +263,24 @@ layersEl.addEventListener('click', (ev) => {
 
   switch (action) {
     case LayerCanvasActionEnums.DELETE:
-      removeCurrentCanvasItem(id);
       removeCanvasItem(id);
+      unsetPreviewCanvasItem();
       break;
     case LayerCanvasActionEnums.SELECT:
+      setSelectedCanvasItem({id});
       break;
     default:
   }
 
-  renderCurrentCanvasItemList();
 }, true);
 
 layersEl.addEventListener('mousemove', (ev) => {
   const id = parseInt(ev.target.dataset.id, 10);
-  const canvasItem = getCurrentCanvasItem(id);
-  const previewCanvasItem = Object.assign(
-      {},
-      canvasItem,
-      {fillColor: '#f00', lineColor: '#f00'});
-  previewCanvasItemList = [previewCanvasItem];
-  drawCanvas(previewCtx, previewCanvasItemList);
+  if (Number.isNaN(id)) {
+    unsetPreviewCanvasItem();
+    return;
+  }
+  highlightCanvasItem(id);
 }, true);
 
-layersEl.addEventListener('mouseleave', () => clearCanvas(previewCtx), true);
+layersEl.addEventListener('mouseleave', () => unsetPreviewCanvasItem(), true);

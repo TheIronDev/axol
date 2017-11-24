@@ -14213,9 +14213,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__ = __webpack_require__(461);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__ = __webpack_require__(458);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__const_action_shape_icon__ = __webpack_require__(459);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__const_action_input_map__ = __webpack_require__(460);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__actions_actions__ = __webpack_require__(464);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__store__ = __webpack_require__(463);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__actions_actions__ = __webpack_require__(464);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__store__ = __webpack_require__(463);
 
 
 
@@ -14224,9 +14223,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 
 
-
-// For now, I'm just console logging the dispatched state changes.
-__WEBPACK_IMPORTED_MODULE_6__store__["b" /* store$ */].subscribe(console.log);
 
 const targetCanvasEl = document.getElementById('targetCanvas');
 const targetCtx = targetCanvasEl.getContext('2d');
@@ -14234,29 +14230,19 @@ const previewCanvasEl = document.getElementById('previewCanvas');
 const previewCtx = previewCanvasEl.getContext('2d');
 const layersEl = document.getElementById('layers');
 
+__WEBPACK_IMPORTED_MODULE_5__store__["b" /* store$ */].subscribe((state) => {
+  clearCanvas(previewCtx);
+  clearCanvas(targetCtx);
+  drawCanvas(previewCtx, state.previewCanvasItemList);
+  drawCanvas(targetCtx, state.currentCanvasItemList);
+  renderLayers(state.currentCanvasItemList, state.selectedCanvasItemId);
+});
+
 /**
  * @typedef {{type: CanvasActionEnum, id: number, startX: number, startY: number}}
  */
 let CanvasItem;
 
-/**
- * @type {!Array<!CanvasItem>}
- */
-let currentCanvasItemList = [];
-let previewCanvasItemList = [];
-let currentAction = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE;
-let currentActionFillColor = '#000';
-let currentActionLineColor = '#000';
-let selectedCanvasItem;
-
-/**
- * Sets the current action
- * @param {string} actionInput
- */
-function setAction(actionInput) {
-  const action = __WEBPACK_IMPORTED_MODULE_4__const_action_input_map__["a" /* default */][actionInput] || __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].UNKNOWN;
-  currentAction = action;
-}
 
 /**
  * Handles clearing a canvas context. This is really just a helper method.
@@ -14274,6 +14260,9 @@ function clearCanvas(ctx) {
 function drawCanvas(ctx, canvasItemList) {
   clearCanvas(ctx);
   canvasItemList.forEach((params) => {
+    if (!params) {
+      return;
+    }
     const {fillColor, lineColor, startX, startY, type} = params;
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
@@ -14306,7 +14295,7 @@ function drawCanvas(ctx, canvasItemList) {
  * Updates the layers of actions
  * @param {!CanvasItem} canvasItem
  */
-function addLayer(canvasItem) {
+function createLayer(canvasItem) {
   const {id, type, fillColor, lineColor} = canvasItem;
   const layerId = `action-${id}`;
 
@@ -14326,6 +14315,7 @@ function addLayer(canvasItem) {
   radio.type = 'radio';
   radio.name = 'currentLayer';
   radio.value = id;
+  radio.id = `selected-${id}`;
   radio.setAttribute('data-id', '' + id);
   radio.checked = true;
   radio.setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT);
@@ -14354,183 +14344,49 @@ function addLayer(canvasItem) {
   li.appendChild(shape);
   li.appendChild(fillColorInput);
   li.appendChild(lineColorInput);
-
-  layersEl.insertBefore(li, layersEl.firstChild);
-  selectedCanvasItem = getCurrentCanvasItem(id);
+  return li;
 }
 
-/**
- * @param {number} id
- */
-function removeLayer (id) {
-  const layer = document.getElementById(`action-${id}`);
-  const selectQuery = `[data-action="${__WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT}"]`;
-  let selectedRadio;
-  if (layer) {
-    if (layer.previousSibling) {
-      selectedRadio = layer.previousSibling.querySelector(selectQuery);
-    } else if (layer.nextSibling) {
-      selectedRadio = layer.nextSibling.querySelector(selectQuery);
-    }
-    if (selectedRadio) {
-      const id = parseInt(selectedRadio.value, 10);
-      selectedRadio.checked = true;
-      selectedCanvasItem = getCurrentCanvasItem(id);
-    }
-    layer.parentNode.removeChild(layer);
-  }
-}
 
-/**
- * @param {!CanvasItem} canvasItem
- */
-function addNewCanvasItem(canvasItem) {
-  currentCanvasItemList.push(canvasItem);
-  addLayer(/** @type {!CanvasItem} */ canvasItem);
-  Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["a" /* addCanvasItem */])(canvasItem);
-}
-
-/**
- * @param {number} id
- */
-function removeCurrentCanvasItem(id) {
-  currentCanvasItemList = currentCanvasItemList
-      .filter((canvasItem) => id !== canvasItem.id);
-  removeLayer(id);
-}
-
-/**
- *
- * @param {number} id
- * @returns {?CanvasItem}
- */
-function getCurrentCanvasItem(id) {
-  return currentCanvasItemList.find((canvasItem) => id === canvasItem.id);
-}
-
-/**
- * Returns new canvasItem from recorded mousedown and mousemove/up states.
- * @param {{startX: number, startY: number, endX: number, endY: number}} state
- * @return {?CanvasItem}
- */
-function createNewCanvasItem(state) {
-  const {startX, startY, endX, endY, id} = state;
-  const params = {
-    fillColor: currentActionFillColor,
-    id,
-    lineColor: currentActionLineColor,
-    startX,
-    startY
-  };
-  let type;
-
-  switch (currentAction) {
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
-      const radius = Math.sqrt(
-          (endY - startY) ** 2 + (endX - startX) ** 2);
-      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE;
-      Object.assign(params, {radius, type});
-      break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
-      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE;
-      const xOffset = endX - startX;
-      const yOffset = endY - startY;
-      Object.assign(params, {xOffset, yOffset, type});
-      break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
-      const width = endX - startX;
-      const height = endY - startY;
-      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE;
-      Object.assign(params, {height, type, width});
-      break;
-    default:
-  }
-
-  if (!type) {
-    return null;
-  }
-  return /** @type {!CanvasItem} */ params;
-}
-
-/**
- * @param {{startX: number, startY: number, endX: number, endY: number}} state
- * @return {?CanvasItem}
- */
-function getCanvasItem(state) {
-  const {startX, startY, endX, endY} = state;
-  let canvasItem;
-
-  switch (currentAction) {
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
-      canvasItem = createNewCanvasItem(state);
-      break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
-      if (!selectedCanvasItem) {
-        return null;
+function renderLayers(canvasItemList, selectedCanvasItemId) {
+  // Add canvasItem layers if they don't already exist.
+  canvasItemList.forEach((canvasItem) => {
+    if (!document.getElementById(`action-${canvasItem.id}`)) {
+      const newLayer = createLayer(canvasItem);
+      if (layersEl.firstElementChild) {
+        layersEl.insertBefore(newLayer, layersEl.firstElementChild);
+      } else {
+        layersEl.appendChild(newLayer);
       }
-      const xOffset = endX - startX;
-      const yOffset = endY - startY;
-      const newStartX = selectedCanvasItem.startX + xOffset;
-      const newStartY = selectedCanvasItem.startY + yOffset;
-      const update = {startX: newStartX, startY: newStartY};
+    }
+  });
 
-      canvasItem = Object.assign({}, selectedCanvasItem, update);
-      break;
-    default:
-      throw new Error('CanvasActionEnum not handled in mousemove');
+  // Gather a list of the ids
+  const ids = canvasItemList.reduce((memo, {id}) => {
+    memo[id] = true;
+    return memo;
+  }, {});
+
+  // Remove layers that are no longer in the list.
+  let child = layersEl.firstElementChild;
+  let nextChild;
+  while (child) {
+    nextChild = child.nextSibling;
+    if (!ids[child.dataset.id]) {
+      child.parentNode.removeChild(child);
+    }
+    child = nextChild;
   }
 
-  return canvasItem;
-}
-
-/**
- * Renders a preview of a canvas item.
- */
-function renderCanvasItemPreview(canvasItem) {
-  if (!canvasItem) {
-    clearCanvas(previewCtx);
-    return;
-  }
-  previewCanvasItemList = [canvasItem];
-  drawCanvas(previewCtx, previewCanvasItemList);
-}
-
-/**
- */
-function addOrUpdateCanvasItem(canvasItem) {
-  if (!canvasItem) {
-    return;
-  }
-  let newCanvasItem;
-  switch (currentAction) {
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
-      addNewCanvasItem(canvasItem);
-      break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
-      if (!selectedCanvasItem) {
-        return;
-      }
-      // Mutate the original selectedCanvasItem with our newer canvasItem.
-      Object.assign(selectedCanvasItem, canvasItem);
-      break;
-    default:
+  // Set value of the selected canvas item (in case it was deleted.)
+  const selected = document.getElementById(`#selected-${selectedCanvasItemId}`);
+  if (selected) {
+    selected.checked = true;
   }
 }
-
-function renderCurrentCanvasItemList() {
-  clearCanvas(previewCtx);
-  drawCanvas(targetCtx, currentCanvasItemList);
-}
-
 
 const targetCanvasMousedown$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(targetCanvasEl, 'mousedown');
-
-const docMouseMove$ =__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(document, 'mousemove');
-
+const docMouseMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(document, 'mousemove');
 const docMouseUp$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default.a.Observable.fromEvent(document, 'mouseup');
 
 /**
@@ -14554,23 +14410,17 @@ const canvasDraw$ = targetCanvasMousedown$
             const {offsetX: endX, offsetY: endY} = ev;
             return {endX, endY, startX, startY, id};
           })
-          // Map the object returned from earlier into a "CanvasItem"
-          .map(getCanvasItem)
-          .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["c" /* setPreviewCanvasItem */])
+          .do(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["e" /* setPreviewCanvasItem */])
 
-          // Render the preview canvas
-          .do(renderCanvasItemPreview)
           .takeUntil(
               docMouseUp$
                   .map((ev) => {
                     const {offsetX: endX, offsetY: endY} = ev;
                     return {endX, endY, startX, startY, id};
                   })
-                  .map(getCanvasItem)
                   // Render the primary canvas
-                  .do(addOrUpdateCanvasItem)
-                  .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["d" /* unsetPreviewCanvasItem */])
-                  .do(renderCurrentCanvasItemList)
+                  .do(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["a" /* addOrModifyCanvasItem */])
+                  .do(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["g" /* unsetPreviewCanvasItem */])
           );
     });
 
@@ -14578,15 +14428,15 @@ const canvasDraw$ = targetCanvasMousedown$
 canvasDraw$.subscribe();
 
 document.querySelectorAll('.actions').forEach((action) => {
-  action.addEventListener('change', (ev) => setAction(ev.target.value));
+  action.addEventListener('change', (ev) => Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["h" /* updateCurrentAction */])(ev.target.value));
 });
 
 document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
-  currentActionFillColor = ev.target.value;
+  Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["i" /* updateCurrentActionFill */])(ev.target.value);
 });
 
 document.querySelector('#actionLineColor').addEventListener('change', (ev) => {
-  currentActionLineColor = ev.target.value;
+  Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["j" /* updateCurrentActionLine */])(ev.target.value);
 });
 
 layersEl.addEventListener('change', (ev) => {
@@ -14595,21 +14445,17 @@ layersEl.addEventListener('change', (ev) => {
   const id = parseInt(dataset.id, 10);
   const action = dataset.action;
 
-  selectedCanvasItem = getCurrentCanvasItem(id);
-
   switch (action) {
     case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].CHANGE_FILL_COLOR:
-      selectedCanvasItem.fillColor = target.value;
+      Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["c" /* modifyCanvasItem */])({fillColor: target.value, id});
       break;
     case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].CHANGE_LINE_COLOR:
-      selectedCanvasItem.lineColor = target.value;
+      Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["c" /* modifyCanvasItem */])({id, lineColor: target.value});
       break;
     case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT:
       break;
     default:
   }
-
-  renderCurrentCanvasItemList();
 }, true);
 
 layersEl.addEventListener('click', (ev) => {
@@ -14623,29 +14469,27 @@ layersEl.addEventListener('click', (ev) => {
 
   switch (action) {
     case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].DELETE:
-      removeCurrentCanvasItem(id);
-      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["b" /* removeCanvasItem */])(id);
+      Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["d" /* removeCanvasItem */])(id);
+      Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["g" /* unsetPreviewCanvasItem */])();
       break;
     case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT:
+      Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["f" /* setSelectedCanvasItem */])({id});
       break;
     default:
   }
 
-  renderCurrentCanvasItemList();
 }, true);
 
 layersEl.addEventListener('mousemove', (ev) => {
   const id = parseInt(ev.target.dataset.id, 10);
-  const canvasItem = getCurrentCanvasItem(id);
-  const previewCanvasItem = Object.assign(
-      {},
-      canvasItem,
-      {fillColor: '#f00', lineColor: '#f00'});
-  previewCanvasItemList = [previewCanvasItem];
-  drawCanvas(previewCtx, previewCanvasItemList);
+  if (Number.isNaN(id)) {
+    Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["g" /* unsetPreviewCanvasItem */])();
+    return;
+  }
+  Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["b" /* highlightCanvasItem */])(id);
 }, true);
 
-layersEl.addEventListener('mouseleave', () => clearCanvas(previewCtx), true);
+layersEl.addEventListener('mouseleave', () => Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["g" /* unsetPreviewCanvasItem */])(), true);
 
 
 /***/ }),
@@ -26016,7 +25860,30 @@ function dispatcher(fn) {
 
 
 
-const {ADD_CANVAS_ITEM, REMOVE_CANVAS_ITEM, SET_PREVIEW_CANVAS_ITEM, UNSET_PREVIEW_CANVAS_ITEM} = __WEBPACK_IMPORTED_MODULE_2__const_action__["a" /* default */];
+
+const {
+  ADD_OR_MODIFY_CANVAS_ITEM,
+  HIGHLIGHT_CANVAS_ITEM,
+  MODIFY_CANVAS_ITEM,
+  REMOVE_CANVAS_ITEM,
+  SET_PREVIEW_CANVAS_ITEM,
+  SET_SELECTED_CANVAS_ITEM,
+  UNSET_PREVIEW_CANVAS_ITEM,
+  UPDATE_CURRENT_ACTION,
+  UPDATE_CURRENT_ACTION_FILL,
+  UPDATE_CURRENT_ACTION_LINE
+} = __WEBPACK_IMPORTED_MODULE_2__const_action__["a" /* default */];
+
+/**
+ * @typedef {{
+ *   currentCanvasItemList: !Array,
+ *   previewCanvasItemList: !Array,
+ *   currentAction: !ActionEnum,
+ *   currentActionFillColor: string,
+ *   currentActionLineColor: string,
+ *   selectedCanvasItemId: ?number}} AppState
+ */
+let AppState;
 
 const initialState = {
   currentCanvasItemList: [],
@@ -26024,32 +25891,188 @@ const initialState = {
   currentAction: __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE,
   currentActionFillColor: '#000',
   currentActionLineColor: '#000',
-  selectedCanvasItem: null
+  selectedCanvasItemId: null
 };
+
+/**
+ * Returns new canvasItem from recorded mousedown and mousemove/up states.
+ * @param {!AppState} state
+ * @param {{startX: number, startY: number, endX: number, endY: number}} payload
+ * @return {?CanvasItem}
+ */
+function createNewCanvasItem(state, payload) {
+  const {currentActionFillColor, currentActionLineColor, currentAction} = state;
+  const {startX, startY, endX, endY, id} = payload;
+  const params = {
+    fillColor: currentActionFillColor,
+    id,
+    lineColor: currentActionLineColor,
+    startX,
+    startY
+  };
+  let type;
+
+  switch (currentAction) {
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
+      const radius = Math.sqrt(
+          (endY - startY) ** 2 + (endX - startX) ** 2);
+      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE;
+      Object.assign(params, {radius, type});
+      break;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
+      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE;
+      const xOffset = endX - startX;
+      const yOffset = endY - startY;
+      Object.assign(params, {xOffset, yOffset, type});
+      break;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+      const width = endX - startX;
+      const height = endY - startY;
+      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE;
+      Object.assign(params, {height, type, width});
+      break;
+    default:
+  }
+
+  if (!type) {
+    return null;
+  }
+  return /** @type {!CanvasItem} */ params;
+}
+
+/**
+ * @param {!AppState} state
+ * @param {{startX: number, startY: number, endX: number, endY: number}} payload
+ * @return {?CanvasItem}
+ */
+function modifyCanvasItem(state, payload) {
+  const {startX, startY, endX, endY} = payload;
+  let canvasItem;
+  let selectedCanvasItem;
+
+  switch (state.currentAction) {
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
+      selectedCanvasItem = state.currentCanvasItemList
+          .find((canvasItem) =>  canvasItem.id === state.selectedCanvasItemId);
+      if (!selectedCanvasItem) {
+        return null;
+      }
+      const xOffset = endX - startX;
+      const yOffset = endY - startY;
+      const newStartX = selectedCanvasItem.startX + xOffset;
+      const newStartY = selectedCanvasItem.startY + yOffset;
+      const update = {startX: newStartX, startY: newStartY};
+
+      canvasItem = Object.assign({}, selectedCanvasItem, update);
+      break;
+    default:
+      throw new Error('CanvasActionEnum not handled in mousemove');
+  }
+
+  return canvasItem;
+}
+
+/**
+ * @param {!AppState} state
+ * @param {{startX: number, startY: number, endX: number, endY: number}} payload
+ * @return {?CanvasItem}
+ */
+function createCanvasItem(state, payload) {
+  switch (state.currentAction) {
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
+      return createNewCanvasItem(state, payload);
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
+      return modifyCanvasItem(state, payload);
+    default:
+  }
+  return null;
+}
 
 /**
  * Reducer function used to handle the different type of switch-case events.
  * @param state
  * @param dispatchedAction
- * @returns {*}
+ * @returns {AppState}
  */
 const reducer = (state, dispatchedAction) => {
   const {type, payload} = dispatchedAction;
   const newState = Object.assign({}, state);
+
+  let currentCanvasItemList;
+  let selectedCanvasItemId;
+
   switch (type) {
-    case ADD_CANVAS_ITEM:
-      const currentCanvasItemList =
-          [...state.currentCanvasItemList, payload];
-      return Object.assign(newState, {currentCanvasItemList});
+    case ADD_OR_MODIFY_CANVAS_ITEM:
+      const newCanvasItem = createCanvasItem(state, payload);
+      switch (state.currentAction) {
+        case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
+        case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+        case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
+          selectedCanvasItemId = newCanvasItem.id;
+          currentCanvasItemList =
+              [...state.currentCanvasItemList, newCanvasItem];
+          return Object.assign(
+              newState,
+              {currentCanvasItemList, selectedCanvasItemId});
+        case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
+          currentCanvasItemList = state.currentCanvasItemList
+              .map((canvasItem) => {
+                if (canvasItem.id === newCanvasItem.id) {
+                  return Object.assign({}, canvasItem, newCanvasItem);
+                }
+                return canvasItem;
+              });
+          return Object.assign(newState, {currentCanvasItemList});
+      }
+    case HIGHLIGHT_CANVAS_ITEM:
+      const canvasItemToHighlight = state.currentCanvasItemList
+          .find((canvasItem) => canvasItem.id === payload);
+      const highlight = Object.assign(
+          {},
+          canvasItemToHighlight,
+          {fillColor: '#f00', lineColor: '#f00'});
+
+      return Object.assign(newState, {previewCanvasItemList: [highlight]});
+    case MODIFY_CANVAS_ITEM:
+      currentCanvasItemList = state.currentCanvasItemList
+          .map((canvasItem) => {
+            return (canvasItem.id !== payload.id) ?
+                canvasItem :
+                Object.assign({}, canvasItem, payload);
+            if (canvasItem.id !== payload.id) {
+              return canvasItem;
+            }
+            return Object.assign({}, canvasItem, payload);
+          });
+      return Object.assign(
+          newState,
+          {currentCanvasItemList});
     case REMOVE_CANVAS_ITEM:
-      const filteredCurrentCanvasItemList = state.currentCanvasItemList
+      currentCanvasItemList = state.currentCanvasItemList
           .filter((canvasItem) => canvasItem.id !== payload);
-      return Object.assign(newState, {currentCanvasItemList: filteredCurrentCanvasItemList});
+      if (state.selectedCanvasItemId !== payload) {
+        return Object.assign(newState, {currentCanvasItemList});
+      }
+      selectedCanvasItemId = currentCanvasItemList.length ?
+          currentCanvasItemList[currentCanvasItemList.length - 1].id :
+          null;
+        return Object.assign(
+            newState,
+            {currentCanvasItemList, selectedCanvasItemId});
     case SET_PREVIEW_CANVAS_ITEM:
-      const previewCanvasItemList = [payload];
+      const previewCanvasItemList = [createCanvasItem(state, payload)];
       return Object.assign(newState, {previewCanvasItemList});
+
+    // The following actions are simple and don't need to make use of existing
+    // AppState to figure what to add.
+    case SET_SELECTED_CANVAS_ITEM:
     case UNSET_PREVIEW_CANVAS_ITEM:
-      return Object.assign(newState, {previewCanvasItemList: []});
+    case UPDATE_CURRENT_ACTION:
+    case UPDATE_CURRENT_ACTION_FILL:
+    case UPDATE_CURRENT_ACTION_LINE:
+      return Object.assign(newState, payload);
     default:
       return state;
   }
@@ -26078,67 +26101,157 @@ const store$ = storeObserver$;
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__const_action__ = __webpack_require__(465);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__dispatcher__ = __webpack_require__(462);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__const_action_input_map__ = __webpack_require__(460);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__ = __webpack_require__(461);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__const_action__ = __webpack_require__(465);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__dispatcher__ = __webpack_require__(462);
+
+
 
 
 
 const {
-  ADD_CANVAS_ITEM,
+  ADD_OR_MODIFY_CANVAS_ITEM,
+  HIGHLIGHT_CANVAS_ITEM,
+  MODIFY_CANVAS_ITEM,
   REMOVE_CANVAS_ITEM,
+  SET_SELECTED_CANVAS_ITEM,
   SET_PREVIEW_CANVAS_ITEM,
-  UNSET_PREVIEW_CANVAS_ITEM
-} = __WEBPACK_IMPORTED_MODULE_0__const_action__["a" /* default */];
+  UNSET_PREVIEW_CANVAS_ITEM,
+  UPDATE_CURRENT_ACTION,
+  UPDATE_CURRENT_ACTION_FILL,
+  UPDATE_CURRENT_ACTION_LINE,
+} = __WEBPACK_IMPORTED_MODULE_2__const_action__["a" /* default */];
+
 
 /**
- * Adds a canvasItem to the currentCanvasItemList.
+ * Adds or modifies a canvasItem to the currentCanvasItemList.
  * @param {!CanvasItem} canvasItem
  */
-const addCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* default */])((canvasItem) => {
+const addOrModifyCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((canvasItem) => {
   return {
-    type: ADD_CANVAS_ITEM,
+    type: ADD_OR_MODIFY_CANVAS_ITEM,
     payload: canvasItem
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["a"] = addCanvasItem;
+/* harmony export (immutable) */ __webpack_exports__["a"] = addOrModifyCanvasItem;
+
+
+/**
+ * Highlights a canvasItem from the currentCanvasItemList.
+ * @param {number} id
+ */
+const highlightCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((id) => {
+  return {
+    type: HIGHLIGHT_CANVAS_ITEM,
+    payload: id
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["b"] = highlightCanvasItem;
+
+
+/**
+ * Modifies selected canvas item
+ * @param {!Object} canvasItem
+ */
+const modifyCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((canvasItem) => {
+  return {
+    type: MODIFY_CANVAS_ITEM,
+    payload: canvasItem
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["c"] = modifyCanvasItem;
 
 
 /**
  * Removes a canvasItem from the currentCanvasItemList.
  * @param {number} id
  */
-const removeCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* default */])((id) => {
+const removeCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((id) => {
   return {
     type: REMOVE_CANVAS_ITEM,
     payload: id
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["b"] = removeCanvasItem;
+/* harmony export (immutable) */ __webpack_exports__["d"] = removeCanvasItem;
 
 
 /**
  * Adds a canvasItem to the previewCanvasItemList.
  * @param {!CanvasItem} canvasItem
  */
-const setPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* default */])((canvasItem) => {
+const setPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((canvasItem) => {
   return {
     type: SET_PREVIEW_CANVAS_ITEM,
     payload: canvasItem
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["c"] = setPreviewCanvasItem;
+/* harmony export (immutable) */ __webpack_exports__["e"] = setPreviewCanvasItem;
+
+
+/**
+ * Sets the currently selected canvasItem id. Its important to note we only
+ * want to set the id and not the canvasItem object itself. The problem is that
+ * if we are maintaining an object, we may end up storing a reference to
+ * something that was removed from the currentCanvasItemList.
+ * @param {!CanvasItem} canvasItem
+ */
+const setSelectedCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((canvasItem) => {
+  return {
+    type: SET_SELECTED_CANVAS_ITEM,
+    payload: {selectedCanvasItemId: canvasItem.id}
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["f"] = setSelectedCanvasItem;
 
 
 /**
  * Clears the previewCanvasItemList.
  */
-const unsetPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* default */])(() => {
+const unsetPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])(() => {
   return {
     type: UNSET_PREVIEW_CANVAS_ITEM,
-    payload: null
+    payload: {previewCanvasItemList: []}
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["d"] = unsetPreviewCanvasItem;
+/* harmony export (immutable) */ __webpack_exports__["g"] = unsetPreviewCanvasItem;
+
+
+/**
+ * Updates the current action.
+ */
+const updateCurrentAction = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((actionInput) => {
+  const currentAction = __WEBPACK_IMPORTED_MODULE_0__const_action_input_map__["a" /* default */][actionInput] || __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].UNKNOWN;
+  return {
+    type: UPDATE_CURRENT_ACTION,
+    payload: {currentAction}
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["h"] = updateCurrentAction;
+
+
+/**
+ * Updates the current action's fill color.
+ */
+const updateCurrentActionFill = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((currentActionFillColor) => {
+  return {
+    type: UPDATE_CURRENT_ACTION_FILL,
+    payload: {currentActionFillColor}
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["i"] = updateCurrentActionFill;
+
+
+/**
+ * Updates the current action's line color.
+ */
+const updateCurrentActionLine = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((currentActionLineColor) => {
+  return {
+    type: UPDATE_CURRENT_ACTION_LINE,
+    payload: {currentActionLineColor}
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["j"] = updateCurrentActionLine;
 
 
 
@@ -26148,10 +26261,16 @@ const unsetPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__[
 
 "use strict";
 /* harmony default export */ __webpack_exports__["a"] = ({
-  ADD_CANVAS_ITEM: 'aci',
-  REMOVE_CANVAS_ITEM: 'rci',
-  SET_PREVIEW_CANVAS_ITEM: 'spci',
-  UNSET_PREVIEW_CANVAS_ITEM: 'upci'
+  ADD_OR_MODIFY_CANVAS_ITEM: 'ADD_OR_MODIFY_CANVAS_ITEM',
+  HIGHLIGHT_CANVAS_ITEM: 'HIGHLIGHT_CANVAS_ITEM',
+  MODIFY_CANVAS_ITEM: 'MODIFY_CANVAS_ITEM',
+  REMOVE_CANVAS_ITEM: 'REMOVE_CANVAS_ITEM',
+  SET_PREVIEW_CANVAS_ITEM: 'SET_PREVIEW_CANVAS_ITEM',
+  SET_SELECTED_CANVAS_ITEM: 'SET_SELECTED_CANVAS_ITEM',
+  UNSET_PREVIEW_CANVAS_ITEM: 'UNSET_PREVIEW_CANVAS_ITEM',
+  UPDATE_CURRENT_ACTION: 'UPDATE_CURRENT_ACTION',
+  UPDATE_CURRENT_ACTION_FILL: 'UPDATE_CURRENT_ACTION_FILL',
+  UPDATE_CURRENT_ACTION_LINE: 'UPDATE_CURRENT_ACTION_LINE',
 });
 
 /***/ })
