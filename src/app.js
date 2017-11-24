@@ -4,7 +4,7 @@ import LayerCanvasActionEnums from './const/layer-action-enum';
 import ActionShapeIcon from './const/action-shape-icon';
 import ActionInputMap from './const/action-input-map';
 
-import {addCanvasItem, setPreviewCanvasItem, unsetPreviewCanvasItem} from "./actions/actions";
+import {addCanvasItem, removeCanvasItem, setPreviewCanvasItem, unsetPreviewCanvasItem} from "./actions/actions";
 import {store$} from './store';
 
 // For now, I'm just console logging the dispatched state changes.
@@ -410,6 +410,7 @@ layersEl.addEventListener('click', (ev) => {
   switch (action) {
     case LayerCanvasActionEnums.DELETE:
       removeCurrentCanvasItem(id);
+      removeCanvasItem(id);
       break;
     case LayerCanvasActionEnums.SELECT:
       break;

@@ -14560,7 +14560,7 @@ const canvasDraw$ = targetCanvasMousedown$
           })
           // Map the object returned from earlier into a "CanvasItem"
           .map(getCanvasItem)
-          .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["b" /* setPreviewCanvasItem */])
+          .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["c" /* setPreviewCanvasItem */])
 
           // Render the preview canvas
           .do(renderCanvasItemPreview)
@@ -14573,7 +14573,7 @@ const canvasDraw$ = targetCanvasMousedown$
                   .map(getCanvasItem)
                   // Render the primary canvas
                   .do(addOrUpdateCanvasItem)
-                  .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["c" /* unsetPreviewCanvasItem */])
+                  .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["d" /* unsetPreviewCanvasItem */])
                   .do(renderCurrentCanvasItemList)
           );
     });
@@ -14628,6 +14628,7 @@ layersEl.addEventListener('click', (ev) => {
   switch (action) {
     case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].DELETE:
       removeCurrentCanvasItem(id);
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["b" /* removeCanvasItem */])(id);
       break;
     case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT:
       break;
@@ -26019,7 +26020,7 @@ function dispatcher(fn) {
 
 
 
-const {ADD_CANVAS_ITEM, SET_PREVIEW_CANVAS_ITEM, UNSET_PREVIEW_CANVAS_ITEM} = __WEBPACK_IMPORTED_MODULE_2__const_action__["a" /* default */];
+const {ADD_CANVAS_ITEM, REMOVE_CANVAS_ITEM, SET_PREVIEW_CANVAS_ITEM, UNSET_PREVIEW_CANVAS_ITEM} = __WEBPACK_IMPORTED_MODULE_2__const_action__["a" /* default */];
 
 const initialState = {
   currentCanvasItemList: [],
@@ -26044,6 +26045,10 @@ const reducer = (state, dispatchedAction) => {
       const currentCanvasItemList =
           [...state.currentCanvasItemList, payload];
       return Object.assign(newState, {currentCanvasItemList});
+    case REMOVE_CANVAS_ITEM:
+      const filteredCurrentCanvasItemList = state.currentCanvasItemList
+          .filter((canvasItem) => canvasItem.id !== payload);
+      return Object.assign(newState, {currentCanvasItemList: filteredCurrentCanvasItemList});
     case SET_PREVIEW_CANVAS_ITEM:
       const previewCanvasItemList = [payload];
       return Object.assign(newState, {previewCanvasItemList});
@@ -26082,7 +26087,12 @@ const store$ = storeObserver$;
 
 
 
-const {ADD_CANVAS_ITEM, SET_PREVIEW_CANVAS_ITEM, UNSET_PREVIEW_CANVAS_ITEM} = __WEBPACK_IMPORTED_MODULE_0__const_action__["a" /* default */];
+const {
+  ADD_CANVAS_ITEM,
+  REMOVE_CANVAS_ITEM,
+  SET_PREVIEW_CANVAS_ITEM,
+  UNSET_PREVIEW_CANVAS_ITEM
+} = __WEBPACK_IMPORTED_MODULE_0__const_action__["a" /* default */];
 
 /**
  * Adds a canvasItem to the currentCanvasItemList.
@@ -26098,6 +26108,19 @@ const addCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* de
 
 
 /**
+ * Removes a canvasItem from the currentCanvasItemList.
+ * @param {number} id
+ */
+const removeCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a" /* default */])((id) => {
+  return {
+    type: REMOVE_CANVAS_ITEM,
+    payload: id
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["b"] = removeCanvasItem;
+
+
+/**
  * Adds a canvasItem to the previewCanvasItemList.
  * @param {!CanvasItem} canvasItem
  */
@@ -26107,7 +26130,7 @@ const setPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__["a
     payload: canvasItem
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["b"] = setPreviewCanvasItem;
+/* harmony export (immutable) */ __webpack_exports__["c"] = setPreviewCanvasItem;
 
 
 /**
@@ -26119,7 +26142,7 @@ const unsetPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__[
     payload: null
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["c"] = unsetPreviewCanvasItem;
+/* harmony export (immutable) */ __webpack_exports__["d"] = unsetPreviewCanvasItem;
 
 
 
@@ -26130,6 +26153,7 @@ const unsetPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_1__dispatcher__[
 "use strict";
 /* harmony default export */ __webpack_exports__["a"] = ({
   ADD_CANVAS_ITEM: 'aci',
+  REMOVE_CANVAS_ITEM: 'rci',
   SET_PREVIEW_CANVAS_ITEM: 'spci',
   UNSET_PREVIEW_CANVAS_ITEM: 'upci'
 });

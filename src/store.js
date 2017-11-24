@@ -2,7 +2,7 @@ import Rx from 'rxjs/Rx';
 import ActionEnum from './const/canvas-action-enum';
 import action from './const/action';
 
-const {ADD_CANVAS_ITEM, SET_PREVIEW_CANVAS_ITEM, UNSET_PREVIEW_CANVAS_ITEM} = action;
+const {ADD_CANVAS_ITEM, REMOVE_CANVAS_ITEM, SET_PREVIEW_CANVAS_ITEM, UNSET_PREVIEW_CANVAS_ITEM} = action;
 
 const initialState = {
   currentCanvasItemList: [],
@@ -27,6 +27,10 @@ const reducer = (state, dispatchedAction) => {
       const currentCanvasItemList =
           [...state.currentCanvasItemList, payload];
       return Object.assign(newState, {currentCanvasItemList});
+    case REMOVE_CANVAS_ITEM:
+      const filteredCurrentCanvasItemList = state.currentCanvasItemList
+          .filter((canvasItem) => canvasItem.id !== payload);
+      return Object.assign(newState, {currentCanvasItemList: filteredCurrentCanvasItemList});
     case SET_PREVIEW_CANVAS_ITEM:
       const previewCanvasItemList = [payload];
       return Object.assign(newState, {previewCanvasItemList});

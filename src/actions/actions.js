@@ -1,7 +1,12 @@
 import action from '../const/action';
 import dispatcher from '../dispatcher';
 
-const {ADD_CANVAS_ITEM, SET_PREVIEW_CANVAS_ITEM, UNSET_PREVIEW_CANVAS_ITEM} = action;
+const {
+  ADD_CANVAS_ITEM,
+  REMOVE_CANVAS_ITEM,
+  SET_PREVIEW_CANVAS_ITEM,
+  UNSET_PREVIEW_CANVAS_ITEM
+} = action;
 
 /**
  * Adds a canvasItem to the currentCanvasItemList.
@@ -11,6 +16,17 @@ export const addCanvasItem = dispatcher((canvasItem) => {
   return {
     type: ADD_CANVAS_ITEM,
     payload: canvasItem
+  };
+});
+
+/**
+ * Removes a canvasItem from the currentCanvasItemList.
+ * @param {number} id
+ */
+export const removeCanvasItem = dispatcher((id) => {
+  return {
+    type: REMOVE_CANVAS_ITEM,
+    payload: id
   };
 });
 
