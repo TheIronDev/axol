@@ -1,4 +1,4 @@
-import Rx from 'rxjs/Rx';
+import {Observable} from 'rxjs/Rx';
 import CanvasActionEnum from './const/canvas-action-enum';
 import LayerCanvasActionEnums from './const/layer-action-enum';
 import ActionShapeIcon from './const/action-shape-icon';
@@ -210,9 +210,9 @@ function renderLayers(canvasItemList, selectedCanvasItemId) {
   }
 }
 
-const targetCanvasMousedown$ = Rx.Observable.fromEvent(targetCanvasEl, 'mousedown');
-const docMouseMove$ = Rx.Observable.fromEvent(document, 'mousemove');
-const docMouseUp$ = Rx.Observable.fromEvent(document, 'mouseup');
+const targetCanvasMousedown$ = Observable.fromEvent(targetCanvasEl, 'mousedown');
+const docMouseMove$ = Observable.fromEvent(document, 'mousemove');
+const docMouseUp$ = Observable.fromEvent(document, 'mouseup');
 
 /**
  * Handles drawing a canvas by observing a mousedown, followed by mousemoves,
