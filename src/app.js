@@ -57,31 +57,62 @@ function drawCanvas(ctx, canvasItemList) {
     if (!params) {
       return;
     }
-    const {fillColor, lineColor, startX, startY, type} = params;
+    const {fillColor, lineColor, startX, startY, type, rotate} = params;
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
+
+    // Retrieve the center of the canvasItem, used for centering.
+    let centerX = startX;
+    let centerY = startY;
     switch (type) {
-      case CanvasActionEnum.CIRCLE:
-        const {radius} = params;
-        ctx.beginPath();
-        ctx.arc(startX, startY, radius, 0, 2 * Math.PI, false);
-        ctx.fill();
-        ctx.closePath();
-        break;
       case CanvasActionEnum.LINE:
         const {xOffset, yOffset} = params;
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(startX + xOffset, startY + yOffset);
-        ctx.stroke();
-        ctx.closePath();
+
+        centerX = startX + (xOffset / 2);
+        centerY = startY + (yOffset / 2);
         break;
       case CanvasActionEnum.RECTANGLE:
         const {width, height} = params;
-        ctx.fillRect(startX, startY, width, height);
+        centerX = startX + (width / 2);
+        centerY = startY + (height / 2);
         break;
       default:
     }
+
+    // Rotate the canvas pivoted on the center of the canvasItem.
+    ctx.translate(centerX, centerY);
+    ctx.rotate(rotate * Math.PI / 180);
+
+    // Begin drawing a canvasItem
+    ctx.beginPath();
+
+    // Depending on the canvasItem type, we draw shapes differently.
+    switch (type) {
+      case CanvasActionEnum.CIRCLE:
+        const {radius} = params;
+        ctx.arc(0, 0, radius, 0, 2 * Math.PI, false);
+        ctx.fill();
+        break;
+      case CanvasActionEnum.LINE:
+        const {xOffset, yOffset} = params;
+        ctx.moveTo(-xOffset / 2, -yOffset / 2);
+        ctx.lineTo(xOffset / 2, yOffset / 2);
+        ctx.stroke();
+        break;
+      case CanvasActionEnum.RECTANGLE:
+        const {width, height} = params;
+        ctx.fillRect(-width / 2, -height/2, width, height);
+        break;
+      default:
+    }
+
+    // Always close the path.
+    ctx.closePath();
+
+    // Return the canvas back the original state before we were drawing the
+    // canvasItem.
+    ctx.rotate(-rotate * Math.PI / 180);
+    ctx.translate(-centerX, -centerY);
   });
 }
 

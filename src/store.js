@@ -45,10 +45,11 @@ const initialState = {
 function createNewCanvasItem(state, payload) {
   const {currentActionFillColor, currentActionLineColor, currentAction} = state;
   const {startX, startY, endX, endY, id} = payload;
-  const params = {
+  const canvasItem = {
     fillColor: currentActionFillColor,
     id,
     lineColor: currentActionLineColor,
+    rotate: 0,
     startX,
     startY
   };
@@ -59,19 +60,19 @@ function createNewCanvasItem(state, payload) {
       const radius = Math.sqrt(
           (endY - startY) ** 2 + (endX - startX) ** 2);
       type = CanvasActionEnum.CIRCLE;
-      Object.assign(params, {radius, type});
+      Object.assign(canvasItem, {radius, type});
       break;
     case CanvasActionEnum.LINE:
       type = CanvasActionEnum.LINE;
       const xOffset = endX - startX;
       const yOffset = endY - startY;
-      Object.assign(params, {xOffset, yOffset, type});
+      Object.assign(canvasItem, {xOffset, yOffset, type});
       break;
     case CanvasActionEnum.RECTANGLE:
       const width = endX - startX;
       const height = endY - startY;
       type = CanvasActionEnum.RECTANGLE;
-      Object.assign(params, {height, type, width});
+      Object.assign(canvasItem, {height, type, width});
       break;
     default:
   }
@@ -79,7 +80,7 @@ function createNewCanvasItem(state, payload) {
   if (!type) {
     return null;
   }
-  return /** @type {!CanvasItem} */ params;
+  return /** @type {!CanvasItem} */ canvasItem;
 }
 
 /**
@@ -89,21 +90,29 @@ function createNewCanvasItem(state, payload) {
  */
 function modifyCanvasItem(state, payload) {
   const {startX, startY, endX, endY} = payload;
+  let selectedCanvasItem= state.currentCanvasItemList.find(
+      (canvasItem) =>  canvasItem.id === state.selectedCanvasItemId);
+  if (!selectedCanvasItem) {
+    return null;
+  }
   let canvasItem;
-  let selectedCanvasItem;
+  let update;
 
   switch (state.currentAction) {
     case CanvasActionEnum.MOVE:
-      selectedCanvasItem = state.currentCanvasItemList
-          .find((canvasItem) =>  canvasItem.id === state.selectedCanvasItemId);
-      if (!selectedCanvasItem) {
-        return null;
-      }
       const xOffset = endX - startX;
       const yOffset = endY - startY;
       const newStartX = selectedCanvasItem.startX + xOffset;
       const newStartY = selectedCanvasItem.startY + yOffset;
-      const update = {startX: newStartX, startY: newStartY};
+      update = {startX: newStartX, startY: newStartY};
+
+      canvasItem = Object.assign({}, selectedCanvasItem, update);
+      break;
+    case CanvasActionEnum.ROTATE:
+      const xDiff = endX - startX;
+      const yDiff = endY - startY;
+      const rotate = (selectedCanvasItem.rotate + (yDiff) + (xDiff)) % 360;
+      update = {rotate};
 
       canvasItem = Object.assign({}, selectedCanvasItem, update);
       break;
@@ -126,6 +135,7 @@ function createCanvasItem(state, payload) {
     case CanvasActionEnum.LINE:
       return createNewCanvasItem(state, payload);
     case CanvasActionEnum.MOVE:
+    case CanvasActionEnum.ROTATE:
       return modifyCanvasItem(state, payload);
     default:
   }
@@ -159,6 +169,7 @@ const reducer = (state, dispatchedAction) => {
               newState,
               {currentCanvasItemList, selectedCanvasItemId});
         case CanvasActionEnum.MOVE:
+        case CanvasActionEnum.ROTATE:
           currentCanvasItemList = state.currentCanvasItemList
               .map((canvasItem) => {
                 if (canvasItem.id === newCanvasItem.id) {
@@ -180,9 +191,6 @@ const reducer = (state, dispatchedAction) => {
     case MODIFY_CANVAS_ITEM:
       currentCanvasItemList = state.currentCanvasItemList
           .map((canvasItem) => {
-            return (canvasItem.id !== payload.id) ?
-                canvasItem :
-                Object.assign({}, canvasItem, payload);
             if (canvasItem.id !== payload.id) {
               return canvasItem;
             }

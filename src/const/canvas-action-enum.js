@@ -3,6 +3,7 @@ export default {
   LINE: 'l',
   MOVE: 'm',
   CIRCLE: 'c',
-  RECTANGLE: 'r',
+  RECTANGLE: 're',
+  ROTATE: 'ro',
   UNKNOWN: 'u'
 };

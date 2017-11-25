@@ -14263,31 +14263,62 @@ function drawCanvas(ctx, canvasItemList) {
     if (!params) {
       return;
     }
-    const {fillColor, lineColor, startX, startY, type} = params;
+    const {fillColor, lineColor, startX, startY, type, rotate} = params;
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
+
+    // Retrieve the center of the canvasItem, used for centering.
+    let centerX = startX;
+    let centerY = startY;
     switch (type) {
-      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
-        const {radius} = params;
-        ctx.beginPath();
-        ctx.arc(startX, startY, radius, 0, 2 * Math.PI, false);
-        ctx.fill();
-        ctx.closePath();
-        break;
       case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
         const {xOffset, yOffset} = params;
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(startX + xOffset, startY + yOffset);
-        ctx.stroke();
-        ctx.closePath();
+
+        centerX = startX + (xOffset / 2);
+        centerY = startY + (yOffset / 2);
         break;
       case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
         const {width, height} = params;
-        ctx.fillRect(startX, startY, width, height);
+        centerX = startX + (width / 2);
+        centerY = startY + (height / 2);
         break;
       default:
     }
+
+    // Rotate the canvas pivoted on the center of the canvasItem.
+    ctx.translate(centerX, centerY);
+    ctx.rotate(rotate * Math.PI / 180);
+
+    // Begin drawing a canvasItem
+    ctx.beginPath();
+
+    // Depending on the canvasItem type, we draw shapes differently.
+    switch (type) {
+      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
+        const {radius} = params;
+        ctx.arc(0, 0, radius, 0, 2 * Math.PI, false);
+        ctx.fill();
+        break;
+      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
+        const {xOffset, yOffset} = params;
+        ctx.moveTo(-xOffset / 2, -yOffset / 2);
+        ctx.lineTo(xOffset / 2, yOffset / 2);
+        ctx.stroke();
+        break;
+      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+        const {width, height} = params;
+        ctx.fillRect(-width / 2, -height/2, width, height);
+        break;
+      default:
+    }
+
+    // Always close the path.
+    ctx.closePath();
+
+    // Return the canvas back the original state before we were drawing the
+    // canvasItem.
+    ctx.rotate(-rotate * Math.PI / 180);
+    ctx.translate(-centerX, -centerY);
   });
 }
 
@@ -25807,6 +25838,7 @@ exports.zipAll = zipAll_1.zipAll;
 /* harmony default export */ __webpack_exports__["a"] = ({
   line: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].LINE,
   move: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].MOVE,
+  rotate: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].ROTATE,
   circle: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].CIRCLE,
   rectangle: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].RECTANGLE,
 });
@@ -25821,7 +25853,8 @@ exports.zipAll = zipAll_1.zipAll;
   LINE: 'l',
   MOVE: 'm',
   CIRCLE: 'c',
-  RECTANGLE: 'r',
+  RECTANGLE: 're',
+  ROTATE: 'ro',
   UNKNOWN: 'u'
 });
 
@@ -25903,10 +25936,11 @@ const initialState = {
 function createNewCanvasItem(state, payload) {
   const {currentActionFillColor, currentActionLineColor, currentAction} = state;
   const {startX, startY, endX, endY, id} = payload;
-  const params = {
+  const canvasItem = {
     fillColor: currentActionFillColor,
     id,
     lineColor: currentActionLineColor,
+    rotate: 0,
     startX,
     startY
   };
@@ -25917,19 +25951,19 @@ function createNewCanvasItem(state, payload) {
       const radius = Math.sqrt(
           (endY - startY) ** 2 + (endX - startX) ** 2);
       type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE;
-      Object.assign(params, {radius, type});
+      Object.assign(canvasItem, {radius, type});
       break;
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
       type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE;
       const xOffset = endX - startX;
       const yOffset = endY - startY;
-      Object.assign(params, {xOffset, yOffset, type});
+      Object.assign(canvasItem, {xOffset, yOffset, type});
       break;
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
       const width = endX - startX;
       const height = endY - startY;
       type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE;
-      Object.assign(params, {height, type, width});
+      Object.assign(canvasItem, {height, type, width});
       break;
     default:
   }
@@ -25937,7 +25971,7 @@ function createNewCanvasItem(state, payload) {
   if (!type) {
     return null;
   }
-  return /** @type {!CanvasItem} */ params;
+  return /** @type {!CanvasItem} */ canvasItem;
 }
 
 /**
@@ -25947,21 +25981,29 @@ function createNewCanvasItem(state, payload) {
  */
 function modifyCanvasItem(state, payload) {
   const {startX, startY, endX, endY} = payload;
+  let selectedCanvasItem= state.currentCanvasItemList.find(
+      (canvasItem) =>  canvasItem.id === state.selectedCanvasItemId);
+  if (!selectedCanvasItem) {
+    return null;
+  }
   let canvasItem;
-  let selectedCanvasItem;
+  let update;
 
   switch (state.currentAction) {
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
-      selectedCanvasItem = state.currentCanvasItemList
-          .find((canvasItem) =>  canvasItem.id === state.selectedCanvasItemId);
-      if (!selectedCanvasItem) {
-        return null;
-      }
       const xOffset = endX - startX;
       const yOffset = endY - startY;
       const newStartX = selectedCanvasItem.startX + xOffset;
       const newStartY = selectedCanvasItem.startY + yOffset;
-      const update = {startX: newStartX, startY: newStartY};
+      update = {startX: newStartX, startY: newStartY};
+
+      canvasItem = Object.assign({}, selectedCanvasItem, update);
+      break;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].ROTATE:
+      const xDiff = endX - startX;
+      const yDiff = endY - startY;
+      const rotate = (selectedCanvasItem.rotate + (yDiff) + (xDiff)) % 360;
+      update = {rotate};
 
       canvasItem = Object.assign({}, selectedCanvasItem, update);
       break;
@@ -25984,6 +26026,7 @@ function createCanvasItem(state, payload) {
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
       return createNewCanvasItem(state, payload);
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].ROTATE:
       return modifyCanvasItem(state, payload);
     default:
   }
@@ -26017,6 +26060,7 @@ const reducer = (state, dispatchedAction) => {
               newState,
               {currentCanvasItemList, selectedCanvasItemId});
         case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
+        case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].ROTATE:
           currentCanvasItemList = state.currentCanvasItemList
               .map((canvasItem) => {
                 if (canvasItem.id === newCanvasItem.id) {
@@ -26038,9 +26082,6 @@ const reducer = (state, dispatchedAction) => {
     case MODIFY_CANVAS_ITEM:
       currentCanvasItemList = state.currentCanvasItemList
           .map((canvasItem) => {
-            return (canvasItem.id !== payload.id) ?
-                canvasItem :
-                Object.assign({}, canvasItem, payload);
             if (canvasItem.id !== payload.id) {
               return canvasItem;
             }
