@@ -47,7 +47,7 @@ function createNewCanvasItem(state, payload) {
   switch (currentAction) {
     case CanvasActionEnum.CIRCLE:
       const radius = Math.sqrt(
-          (endY - startY) ** 2 + (endX - startX) ** 2);
+          Math.pow(endY - startY, 2) + Math.pow(endX - startX, 2));
       type = CanvasActionEnum.CIRCLE;
       Object.assign(canvasItem, {radius, type});
       break;

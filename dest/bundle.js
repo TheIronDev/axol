@@ -26151,7 +26151,7 @@ function createNewCanvasItem(state, payload) {
   switch (currentAction) {
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
       const radius = Math.sqrt(
-          (endY - startY) ** 2 + (endX - startX) ** 2);
+          Math.pow(endY - startY, 2) + Math.pow(endX - startX, 2));
       type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE;
       Object.assign(canvasItem, {radius, type});
       break;
