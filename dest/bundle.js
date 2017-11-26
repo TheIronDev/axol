@@ -1560,6 +1560,7 @@ exports.MulticastOperator = MulticastOperator;
 "use strict";
 
 /* harmony default export */ __webpack_exports__["a"] = ({
+  BRUSH: 'b',
   LINE: 'l',
   MOVE: 'm',
   CIRCLE: 'c',
@@ -14570,30 +14571,57 @@ function clearCanvas(ctx) {
  */
 function drawCanvas(ctx, canvasItemList) {
   clearCanvas(ctx);
-  canvasItemList.forEach((params) => {
-    if (!params) {
+  canvasItemList.forEach((canvasItem) => {
+    if (!canvasItem) {
       return;
     }
-    const {fillColor, lineColor, startX, startY, type, rotate} = params;
+    const {fillColor, lineColor, startX, startY, type, rotate} = canvasItem;
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
 
     // Retrieve the center of the canvasItem, used for centering.
-    let centerX = startX;
-    let centerY = startY;
+    let centerX;
+    let centerY;
     switch (type) {
+      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH:
+        const {path} = canvasItem;
+        const edges = path.reduce((memo, point) => {
+          const {leftEdge, topEdge, rightEdge, bottomEdge} = memo;
+          if (leftEdge === null || point.x < leftEdge) {
+            memo.leftEdge = point.x;
+          }
+
+          if (rightEdge === null || point.x > rightEdge) {
+            memo.rightEdge = point.x;
+          }
+
+          if (topEdge === null || point.y < topEdge) {
+            memo.topEdge = point.y;
+          }
+
+          if (bottomEdge === null || point.y > bottomEdge) {
+            memo.bottomEdge = point.y;
+          }
+
+          return memo;
+        }, {leftEdge: null, topEdge: null, rightEdge: null, bottomEdge: null});
+        centerX = startX + (edges.leftEdge + edges.rightEdge) / 2;
+        centerY = startY + (edges.topEdge + edges.bottomEdge) / 2;
+        break;
       case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
-        const {xOffset, yOffset} = params;
+        const {xOffset, yOffset} = canvasItem;
 
         centerX = startX + (xOffset / 2);
         centerY = startY + (yOffset / 2);
         break;
       case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
-        const {width, height} = params;
+        const {width, height} = canvasItem;
         centerX = startX + (width / 2);
         centerY = startY + (height / 2);
         break;
       default:
+        centerX = startX;
+        centerY = startY;
     }
 
     // Rotate the canvas pivoted on the center of the canvasItem.
@@ -14605,19 +14633,28 @@ function drawCanvas(ctx, canvasItemList) {
 
     // Depending on the canvasItem type, we draw shapes differently.
     switch (type) {
+      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH:
+        const {path} = canvasItem;
+        const x = -centerX + startX;
+        const y = -centerY + startY;
+        path.forEach((point) => {
+          ctx.lineTo(x + point.x, y + point.y);
+        });
+        ctx.stroke();
+        break;
       case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
-        const {radius} = params;
+        const {radius} = canvasItem;
         ctx.arc(0, 0, radius, 0, 2 * Math.PI, false);
         ctx.fill();
         break;
       case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
-        const {xOffset, yOffset} = params;
+        const {xOffset, yOffset} = canvasItem;
         ctx.moveTo(-xOffset / 2, -yOffset / 2);
         ctx.lineTo(xOffset / 2, yOffset / 2);
         ctx.stroke();
         break;
       case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
-        const {width, height} = params;
+        const {width, height} = canvasItem;
         ctx.fillRect(-width / 2, -height/2, width, height);
         break;
       default:
@@ -14728,7 +14765,8 @@ function renderLayers(canvasItemList, selectedCanvasItemId) {
 }
 
 const targetCanvasMousedown$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'mousedown');
-const docMouseMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(document, 'mousemove');
+const docMouseMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(document, 'mousemove')
+    .throttleTime(16);
 const docMouseUp$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(document, 'mouseup');
 
 /**
@@ -14746,11 +14784,13 @@ const canvasDraw$ = targetCanvasMousedown$
       return Object.assign({}, state, {id: memo.id + 1});
     }, {id: 0})
     .switchMap(({startX, startY, id}) => {
+      const path = [];
       return docMouseMove$
           // Map the mousemove event to a simple object
           .map((ev) => {
             const {offsetX: endX, offsetY: endY} = ev;
-            return {endX, endY, startX, startY, id};
+            path.push({x: endX - startX, y: endY - startY});
+            return {endX, endY, startX, startY, id, path};
           })
           .do(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["e" /* setPreviewCanvasItem */])
 
@@ -14758,7 +14798,7 @@ const canvasDraw$ = targetCanvasMousedown$
               docMouseUp$
                   .map((ev) => {
                     const {offsetX: endX, offsetY: endY} = ev;
-                    return {endX, endY, startX, startY, id};
+                    return {endX, endY, startX, startY, id, path};
                   })
                   // Render the primary canvas
                   .do(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["a" /* addOrModifyCanvasItem */])
@@ -25893,6 +25933,7 @@ exports.zipAll = zipAll_1.zipAll;
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
+  [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].BRUSH]: 'brush',
   [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].LINE]: 'linear_scale',
   [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].CIRCLE]: 'lens',
   [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].RECTANGLE]: 'crop_square',
@@ -26067,6 +26108,7 @@ const updateCurrentActionLine = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
+  brush: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].BRUSH,
   line: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].LINE,
   move: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].MOVE,
   rotate: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].ROTATE,
@@ -26137,7 +26179,7 @@ let AppState;
  */
 function createNewCanvasItem(state, payload) {
   const {currentActionFillColor, currentActionLineColor, currentAction} = state;
-  const {startX, startY, endX, endY, id} = payload;
+  const {startX, startY, endX, endY, id, path} = payload;
   const canvasItem = {
     fillColor: currentActionFillColor,
     id,
@@ -26149,6 +26191,10 @@ function createNewCanvasItem(state, payload) {
   let type;
 
   switch (currentAction) {
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH:
+      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH;
+      Object.assign(canvasItem, {path, type});
+      break;
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
       const radius = Math.sqrt(
           Math.pow(endY - startY, 2) + Math.pow(endX - startX, 2));
@@ -26223,6 +26269,7 @@ function modifyCanvasItem(state, payload) {
  */
 function createCanvasItem(state, payload) {
   switch (state.currentAction) {
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH:
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
@@ -26252,6 +26299,7 @@ const reducer = (state, dispatchedAction) => {
     case ADD_OR_MODIFY_CANVAS_ITEM:
       const newCanvasItem = createCanvasItem(state, payload);
       switch (state.currentAction) {
+        case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH:
         case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
         case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
         case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:

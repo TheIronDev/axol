@@ -33,7 +33,7 @@ let AppState;
  */
 function createNewCanvasItem(state, payload) {
   const {currentActionFillColor, currentActionLineColor, currentAction} = state;
-  const {startX, startY, endX, endY, id} = payload;
+  const {startX, startY, endX, endY, id, path} = payload;
   const canvasItem = {
     fillColor: currentActionFillColor,
     id,
@@ -45,6 +45,10 @@ function createNewCanvasItem(state, payload) {
   let type;
 
   switch (currentAction) {
+    case CanvasActionEnum.BRUSH:
+      type = CanvasActionEnum.BRUSH;
+      Object.assign(canvasItem, {path, type});
+      break;
     case CanvasActionEnum.CIRCLE:
       const radius = Math.sqrt(
           Math.pow(endY - startY, 2) + Math.pow(endX - startX, 2));
@@ -119,6 +123,7 @@ function modifyCanvasItem(state, payload) {
  */
 function createCanvasItem(state, payload) {
   switch (state.currentAction) {
+    case CanvasActionEnum.BRUSH:
     case CanvasActionEnum.CIRCLE:
     case CanvasActionEnum.RECTANGLE:
     case CanvasActionEnum.LINE:
@@ -148,6 +153,7 @@ const reducer = (state, dispatchedAction) => {
     case ADD_OR_MODIFY_CANVAS_ITEM:
       const newCanvasItem = createCanvasItem(state, payload);
       switch (state.currentAction) {
+        case CanvasActionEnum.BRUSH:
         case CanvasActionEnum.CIRCLE:
         case CanvasActionEnum.RECTANGLE:
         case CanvasActionEnum.LINE:

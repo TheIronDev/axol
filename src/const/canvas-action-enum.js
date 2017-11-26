@@ -1,5 +1,6 @@
 
 export default {
+  BRUSH: 'b',
   LINE: 'l',
   MOVE: 'm',
   CIRCLE: 'c',

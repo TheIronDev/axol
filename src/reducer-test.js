@@ -4,6 +4,7 @@ import action from './const/action';
 import reducer from './reducer';
 
 const {
+  BRUSH,
   LINE,
   MOVE,
   CIRCLE,
@@ -13,7 +14,12 @@ const {
 
 function getCanvasItem(payload) {
   const baseCanvasItem = {
-    fillColor: '#000', lineColor: '#000', rotate: 0, startX: 0, startY: 0};
+    fillColor: '#000',
+    lineColor: '#000',
+    rotate: 0,
+    startX: 0,
+    startY: 0
+  };
   return Object.assign({}, baseCanvasItem, payload);
 }
 
@@ -76,6 +82,26 @@ describe('reducer', () => {
 
       const expectedCanvasItem = getCanvasItem(
           {id: 31, type: LINE, yOffset: 2, xOffset: 2});
+
+      const result = reducer(initialState, dispatchedAction);
+      expect(result.currentCanvasItemList).to.eql([expectedCanvasItem]);
+    });
+
+    it('should add a brush stroke if currentAction is BRUSH', () => {
+      const path = [
+        {x: 2, y: 0},
+        {x: 2, y: 2},
+        {x: 0, y: 2},
+        {x: 0, y: 0}
+      ];
+      initialState.currentAction = BRUSH;
+      dispatchedAction = {
+        type: action.ADD_OR_MODIFY_CANVAS_ITEM,
+        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 31, path}
+      };
+
+      const expectedCanvasItem = getCanvasItem(
+          {id: 31, type: BRUSH, path});
 
       const result = reducer(initialState, dispatchedAction);
       expect(result.currentCanvasItemList).to.eql([expectedCanvasItem]);
