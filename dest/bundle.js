@@ -14482,7 +14482,7 @@ exports.VirtualAction = VirtualAction;
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__ = __webpack_require__(57);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__ = __webpack_require__(15);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__reducer__ = __webpack_require__(464);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__reducer__ = __webpack_require__(465);
 
 
 
@@ -14524,8 +14524,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__ = __webpack_require__(459);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__const_action_shape_icon__ = __webpack_require__(460);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__canvas_render__ = __webpack_require__(465);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__actions_actions__ = __webpack_require__(461);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__canvas_render__ = __webpack_require__(461);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__actions_actions__ = __webpack_require__(462);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__store__ = __webpack_require__(162);
 
 
@@ -14649,7 +14649,7 @@ function renderLayers(canvasItemList, selectedCanvasItemId) {
 }
 
 const targetCanvasMousedown$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'mousedown');
-const docMouseMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(document, 'mousemove')
+const targetCanvasMouseMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'mousemove')
     .throttleTime(16);
 const docMouseUp$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(document, 'mouseup');
 
@@ -14659,8 +14659,8 @@ const docMouseUp$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEven
  */
 const canvasDraw$ = targetCanvasMousedown$
     .map((ev) => {
-      const {offsetX, offsetY} = ev;
-      return {startX: offsetX, startY: offsetY};
+      const {offsetX: startX, offsetY: startY} = ev;
+      return {startX, startY};
     })
     .scan((memo, state) => {
       // Generate a new id that may or may not be used, we just want a
@@ -14669,10 +14669,13 @@ const canvasDraw$ = targetCanvasMousedown$
     }, {id: 0})
     .switchMap(({startX, startY, id}) => {
       const path = [];
-      return docMouseMove$
+      let endX, endY;
+      return targetCanvasMouseMove$
           // Map the mousemove event to a simple object
           .map((ev) => {
-            const {offsetX: endX, offsetY: endY} = ev;
+            const {offsetX, offsetY} = ev;
+            endX = offsetX;
+            endY = offsetY;
             path.push({x: endX - startX, y: endY - startY});
             return {endX, endY, startX, startY, id, path};
           })
@@ -14680,10 +14683,8 @@ const canvasDraw$ = targetCanvasMousedown$
 
           .takeUntil(
               docMouseUp$
-                  .map((ev) => {
-                    const {offsetX: endX, offsetY: endY} = ev;
-                    return {endX, endY, startX, startY, id, path};
-                  })
+                  // Only return the x/y offset of the canvas.
+                  .map(() => ({endX, endY, startX, startY, id, path}))
                   // Render the primary canvas
                   .do(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["a" /* addOrModifyCanvasItem */])
                   .do(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["g" /* unsetPreviewCanvasItem */])
@@ -25829,10 +25830,180 @@ exports.zipAll = zipAll_1.zipAll;
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__const_action_input_map__ = __webpack_require__(462);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__ = __webpack_require__(15);
+
+
+/**
+ * Handles clearing a canvas context.
+ * @param {!CanvasRenderingContext2D} ctx
+ */
+const clearCanvas = (ctx) => {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+};
+/* harmony export (immutable) */ __webpack_exports__["a"] = clearCanvas;
+
+
+/**
+ * Returns the center of a canvasItem
+ * @param canvasItem
+ * @returns {{centerX: number, centerY: number}}
+ */
+const getCanvasItemCenter = (canvasItem) => {
+  const {startX, startY, type} = canvasItem;
+  let centerX;
+  let centerY;
+  switch (type) {
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].BRUSH:
+      const {path} = canvasItem;
+      const edges = path.reduce((memo, point) => {
+        const {leftEdge, topEdge, rightEdge, bottomEdge} = memo;
+        if (leftEdge === null || point.x < leftEdge) {
+          memo.leftEdge = point.x;
+        }
+
+        if (rightEdge === null || point.x > rightEdge) {
+          memo.rightEdge = point.x;
+        }
+
+        if (topEdge === null || point.y < topEdge) {
+          memo.topEdge = point.y;
+        }
+
+        if (bottomEdge === null || point.y > bottomEdge) {
+          memo.bottomEdge = point.y;
+        }
+
+        return memo;
+      }, {leftEdge: null, topEdge: null, rightEdge: null, bottomEdge: null});
+      centerX = startX + (edges.leftEdge + edges.rightEdge) / 2;
+      centerY = startY + (edges.topEdge + edges.bottomEdge) / 2;
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].LINE:
+      const {xOffset, yOffset} = canvasItem;
+
+      centerX = startX + (xOffset / 2);
+      centerY = startY + (yOffset / 2);
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+      const {width, height} = canvasItem;
+      centerX = startX + (width / 2);
+      centerY = startY + (height / 2);
+      break;
+    default:
+      centerX = startX;
+      centerY = startY;
+  }
+  return {centerX, centerY};
+};
+/* unused harmony export getCanvasItemCenter */
+
+
+/**
+ * Renders a canvasItem onto a canvas context.
+ * @param {!CanvasRenderingContext2D} ctx
+ * @param canvasItem
+ * @param {number} centerX
+ * @param {number} centerY
+ */
+const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
+  const {startX, startY, type, rotate} = canvasItem;
+
+  // Rotate the canvas pivoted on the center of the canvasItem.
+  ctx.translate(centerX, centerY);
+  ctx.rotate(rotate * Math.PI / 180);
+
+  // Begin drawing a canvasItem
+  ctx.beginPath();
+
+  // Depending on the canvasItem type, we draw shapes differently.
+  switch (type) {
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].BRUSH:
+      const {path} = canvasItem;
+      const x = -centerX + startX;
+      const y = -centerY + startY;
+      path.forEach((point) => {
+        ctx.lineTo(x + point.x, y + point.y);
+      });
+      ctx.stroke();
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].CIRCLE:
+      const {radius} = canvasItem;
+      ctx.arc(0, 0, radius, 0, 2 * Math.PI, false);
+      ctx.fill();
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].LINE:
+      const {xOffset, yOffset} = canvasItem;
+      ctx.moveTo(-xOffset / 2, -yOffset / 2);
+      ctx.lineTo(xOffset / 2, yOffset / 2);
+      ctx.stroke();
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+      const {width, height} = canvasItem;
+      ctx.fillRect(-width / 2, -height/2, width, height);
+      break;
+    default:
+  }
+
+  // Always close the path.
+  ctx.closePath();
+
+  // Return the canvas back the original state before we were drawing the
+  // canvasItem.
+  ctx.rotate(-rotate * Math.PI / 180);
+  ctx.translate(-centerX, -centerY);
+};
+/* unused harmony export renderCanvasItem */
+
+
+/**
+ * Handles calling the appropriate methods needed to draw a canvasItem. This
+ * acts as a high order function, being passed in a canvas context and
+ * returning a method that will handle any given canvasItem.
+ * @param {!CanvasRenderingContext2D} ctx
+ * @returns {function(*=)}
+ */
+const canvasItemRenderer = (ctx) => {
+  return (canvasItem) => {
+    if (!canvasItem) {
+      return;
+    }
+
+    const {fillColor, lineColor} = canvasItem;
+    ctx.fillStyle = fillColor;
+    ctx.strokeStyle = lineColor;
+
+    // Retrieve the center of the canvasItem, used for centering.
+    const {centerX, centerY} = getCanvasItemCenter(canvasItem);
+
+    // Render the canvasItem
+    renderCanvasItem(ctx, canvasItem, centerX, centerY);
+  };
+};
+/* unused harmony export canvasItemRenderer */
+
+
+/**
+ * Draws the canvas given an array of canvasItems.
+ * @param {!CanvasRenderingContext2D} ctx
+ * @param {!Array<!CanvasItem>} canvasItemList
+ */
+const drawCanvas = (ctx, canvasItemList) => {
+  clearCanvas(ctx);
+  canvasItemList.forEach(canvasItemRenderer(ctx));
+};
+/* harmony export (immutable) */ __webpack_exports__["b"] = drawCanvas;
+
+
+
+/***/ }),
+/* 462 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__const_action_input_map__ = __webpack_require__(463);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__ = __webpack_require__(15);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__const_action__ = __webpack_require__(161);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__dispatcher__ = __webpack_require__(463);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__dispatcher__ = __webpack_require__(464);
 
 
 
@@ -25984,7 +26155,7 @@ const updateCurrentActionLine = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__
 
 
 /***/ }),
-/* 462 */
+/* 463 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -26001,7 +26172,7 @@ const updateCurrentActionLine = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__
 });
 
 /***/ }),
-/* 463 */
+/* 464 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -26022,7 +26193,7 @@ function dispatcher(fn) {
 }
 
 /***/ }),
-/* 464 */
+/* 465 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -26254,176 +26425,6 @@ const reducer = (state, dispatchedAction) => {
 };
 
 /* harmony default export */ __webpack_exports__["a"] = (reducer);
-
-
-/***/ }),
-/* 465 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__ = __webpack_require__(15);
-
-
-/**
- * Handles clearing a canvas context.
- * @param {!CanvasRenderingContext2D} ctx
- */
-const clearCanvas = (ctx) => {
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-};
-/* harmony export (immutable) */ __webpack_exports__["a"] = clearCanvas;
-
-
-/**
- * Returns the center of a canvasItem
- * @param canvasItem
- * @returns {{centerX: number, centerY: number}}
- */
-const getCanvasItemCenter = (canvasItem) => {
-  const {startX, startY, type} = canvasItem;
-  let centerX;
-  let centerY;
-  switch (type) {
-    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].BRUSH:
-      const {path} = canvasItem;
-      const edges = path.reduce((memo, point) => {
-        const {leftEdge, topEdge, rightEdge, bottomEdge} = memo;
-        if (leftEdge === null || point.x < leftEdge) {
-          memo.leftEdge = point.x;
-        }
-
-        if (rightEdge === null || point.x > rightEdge) {
-          memo.rightEdge = point.x;
-        }
-
-        if (topEdge === null || point.y < topEdge) {
-          memo.topEdge = point.y;
-        }
-
-        if (bottomEdge === null || point.y > bottomEdge) {
-          memo.bottomEdge = point.y;
-        }
-
-        return memo;
-      }, {leftEdge: null, topEdge: null, rightEdge: null, bottomEdge: null});
-      centerX = startX + (edges.leftEdge + edges.rightEdge) / 2;
-      centerY = startY + (edges.topEdge + edges.bottomEdge) / 2;
-      break;
-    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].LINE:
-      const {xOffset, yOffset} = canvasItem;
-
-      centerX = startX + (xOffset / 2);
-      centerY = startY + (yOffset / 2);
-      break;
-    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].RECTANGLE:
-      const {width, height} = canvasItem;
-      centerX = startX + (width / 2);
-      centerY = startY + (height / 2);
-      break;
-    default:
-      centerX = startX;
-      centerY = startY;
-  }
-  return {centerX, centerY};
-};
-/* unused harmony export getCanvasItemCenter */
-
-
-/**
- * Renders a canvasItem onto a canvas context.
- * @param {!CanvasRenderingContext2D} ctx
- * @param canvasItem
- * @param {number} centerX
- * @param {number} centerY
- */
-const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
-  const {startX, startY, type, rotate} = canvasItem;
-
-  // Rotate the canvas pivoted on the center of the canvasItem.
-  ctx.translate(centerX, centerY);
-  ctx.rotate(rotate * Math.PI / 180);
-
-  // Begin drawing a canvasItem
-  ctx.beginPath();
-
-  // Depending on the canvasItem type, we draw shapes differently.
-  switch (type) {
-    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].BRUSH:
-      const {path} = canvasItem;
-      const x = -centerX + startX;
-      const y = -centerY + startY;
-      path.forEach((point) => {
-        ctx.lineTo(x + point.x, y + point.y);
-      });
-      ctx.stroke();
-      break;
-    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].CIRCLE:
-      const {radius} = canvasItem;
-      ctx.arc(0, 0, radius, 0, 2 * Math.PI, false);
-      ctx.fill();
-      break;
-    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].LINE:
-      const {xOffset, yOffset} = canvasItem;
-      ctx.moveTo(-xOffset / 2, -yOffset / 2);
-      ctx.lineTo(xOffset / 2, yOffset / 2);
-      ctx.stroke();
-      break;
-    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].RECTANGLE:
-      const {width, height} = canvasItem;
-      ctx.fillRect(-width / 2, -height/2, width, height);
-      break;
-    default:
-  }
-
-  // Always close the path.
-  ctx.closePath();
-
-  // Return the canvas back the original state before we were drawing the
-  // canvasItem.
-  ctx.rotate(-rotate * Math.PI / 180);
-  ctx.translate(-centerX, -centerY);
-};
-/* unused harmony export renderCanvasItem */
-
-
-/**
- * Handles calling the appropriate methods needed to draw a canvasItem. This
- * acts as a high order function, being passed in a canvas context and
- * returning a method that will handle any given canvasItem.
- * @param {!CanvasRenderingContext2D} ctx
- * @returns {function(*=)}
- */
-const canvasItemRenderer = (ctx) => {
-  return (canvasItem) => {
-    if (!canvasItem) {
-      return;
-    }
-
-    const {fillColor, lineColor} = canvasItem;
-    ctx.fillStyle = fillColor;
-    ctx.strokeStyle = lineColor;
-
-    // Retrieve the center of the canvasItem, used for centering.
-    const {centerX, centerY} = getCanvasItemCenter(canvasItem);
-
-    // Render the canvasItem
-    renderCanvasItem(ctx, canvasItem, centerX, centerY);
-  };
-};
-/* unused harmony export canvasItemRenderer */
-
-
-/**
- * Draws the canvas given an array of canvasItems.
- * @param {!CanvasRenderingContext2D} ctx
- * @param {!Array<!CanvasItem>} canvasItemList
- */
-const drawCanvas = (ctx, canvasItemList) => {
-  clearCanvas(ctx);
-  canvasItemList.forEach(canvasItemRenderer(ctx));
-};
-/* harmony export (immutable) */ __webpack_exports__["b"] = drawCanvas;
-
 
 
 /***/ })

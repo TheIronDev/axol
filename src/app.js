@@ -131,7 +131,7 @@ function renderLayers(canvasItemList, selectedCanvasItemId) {
 }
 
 const targetCanvasMousedown$ = Observable.fromEvent(targetCanvasEl, 'mousedown');
-const docMouseMove$ = Observable.fromEvent(document, 'mousemove')
+const targetCanvasMouseMove$ = Observable.fromEvent(targetCanvasEl, 'mousemove')
     .throttleTime(16);
 const docMouseUp$ = Observable.fromEvent(document, 'mouseup');
 
@@ -141,8 +141,8 @@ const docMouseUp$ = Observable.fromEvent(document, 'mouseup');
  */
 const canvasDraw$ = targetCanvasMousedown$
     .map((ev) => {
-      const {offsetX, offsetY} = ev;
-      return {startX: offsetX, startY: offsetY};
+      const {offsetX: startX, offsetY: startY} = ev;
+      return {startX, startY};
     })
     .scan((memo, state) => {
       // Generate a new id that may or may not be used, we just want a
@@ -151,10 +151,13 @@ const canvasDraw$ = targetCanvasMousedown$
     }, {id: 0})
     .switchMap(({startX, startY, id}) => {
       const path = [];
-      return docMouseMove$
+      let endX, endY;
+      return targetCanvasMouseMove$
           // Map the mousemove event to a simple object
           .map((ev) => {
-            const {offsetX: endX, offsetY: endY} = ev;
+            const {offsetX, offsetY} = ev;
+            endX = offsetX;
+            endY = offsetY;
             path.push({x: endX - startX, y: endY - startY});
             return {endX, endY, startX, startY, id, path};
           })
@@ -162,10 +165,8 @@ const canvasDraw$ = targetCanvasMousedown$
 
           .takeUntil(
               docMouseUp$
-                  .map((ev) => {
-                    const {offsetX: endX, offsetY: endY} = ev;
-                    return {endX, endY, startX, startY, id, path};
-                  })
+                  // Only return the x/y offset of the canvas.
+                  .map(() => ({endX, endY, startX, startY, id, path}))
                   // Render the primary canvas
                   .do(addOrModifyCanvasItem)
                   .do(unsetPreviewCanvasItem)
