@@ -14522,9 +14522,9 @@ const store$ = storeObserver$;
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__ = __webpack_require__(57);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__ = __webpack_require__(15);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__ = __webpack_require__(459);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__const_action_shape_icon__ = __webpack_require__(460);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__ = __webpack_require__(459);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__const_action_shape_icon__ = __webpack_require__(460);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__canvas_render__ = __webpack_require__(465);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__actions_actions__ = __webpack_require__(461);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__store__ = __webpack_require__(162);
 
@@ -14543,10 +14543,10 @@ const previewCtx = previewCanvasEl.getContext('2d');
 const layersEl = document.getElementById('layers');
 
 __WEBPACK_IMPORTED_MODULE_5__store__["b" /* store$ */].subscribe((state) => {
-  clearCanvas(previewCtx);
-  clearCanvas(targetCtx);
-  drawCanvas(previewCtx, state.previewCanvasItemList);
-  drawCanvas(targetCtx, state.currentCanvasItemList);
+  Object(__WEBPACK_IMPORTED_MODULE_3__canvas_render__["a" /* clearCanvas */])(previewCtx);
+  Object(__WEBPACK_IMPORTED_MODULE_3__canvas_render__["a" /* clearCanvas */])(targetCtx);
+  Object(__WEBPACK_IMPORTED_MODULE_3__canvas_render__["b" /* drawCanvas */])(previewCtx, state.previewCanvasItemList);
+  Object(__WEBPACK_IMPORTED_MODULE_3__canvas_render__["b" /* drawCanvas */])(targetCtx, state.currentCanvasItemList);
   renderLayers(state.currentCanvasItemList, state.selectedCanvasItemId);
 });
 
@@ -14554,121 +14554,6 @@ __WEBPACK_IMPORTED_MODULE_5__store__["b" /* store$ */].subscribe((state) => {
  * @typedef {{type: CanvasActionEnum, id: number, startX: number, startY: number}}
  */
 let CanvasItem;
-
-
-/**
- * Handles clearing a canvas context. This is really just a helper method.
- * @param {!CanvasRenderingContext2D} ctx
- */
-function clearCanvas(ctx) {
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-}
-
-/**
- * Draws the canvas given an array of canvasItems.
- * @param {!CanvasRenderingContext2D} ctx
- * @param {!Array<!CanvasItem>} canvasItemList
- */
-function drawCanvas(ctx, canvasItemList) {
-  clearCanvas(ctx);
-  canvasItemList.forEach((canvasItem) => {
-    if (!canvasItem) {
-      return;
-    }
-    const {fillColor, lineColor, startX, startY, type, rotate} = canvasItem;
-    ctx.fillStyle = fillColor;
-    ctx.strokeStyle = lineColor;
-
-    // Retrieve the center of the canvasItem, used for centering.
-    let centerX;
-    let centerY;
-    switch (type) {
-      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH:
-        const {path} = canvasItem;
-        const edges = path.reduce((memo, point) => {
-          const {leftEdge, topEdge, rightEdge, bottomEdge} = memo;
-          if (leftEdge === null || point.x < leftEdge) {
-            memo.leftEdge = point.x;
-          }
-
-          if (rightEdge === null || point.x > rightEdge) {
-            memo.rightEdge = point.x;
-          }
-
-          if (topEdge === null || point.y < topEdge) {
-            memo.topEdge = point.y;
-          }
-
-          if (bottomEdge === null || point.y > bottomEdge) {
-            memo.bottomEdge = point.y;
-          }
-
-          return memo;
-        }, {leftEdge: null, topEdge: null, rightEdge: null, bottomEdge: null});
-        centerX = startX + (edges.leftEdge + edges.rightEdge) / 2;
-        centerY = startY + (edges.topEdge + edges.bottomEdge) / 2;
-        break;
-      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
-        const {xOffset, yOffset} = canvasItem;
-
-        centerX = startX + (xOffset / 2);
-        centerY = startY + (yOffset / 2);
-        break;
-      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
-        const {width, height} = canvasItem;
-        centerX = startX + (width / 2);
-        centerY = startY + (height / 2);
-        break;
-      default:
-        centerX = startX;
-        centerY = startY;
-    }
-
-    // Rotate the canvas pivoted on the center of the canvasItem.
-    ctx.translate(centerX, centerY);
-    ctx.rotate(rotate * Math.PI / 180);
-
-    // Begin drawing a canvasItem
-    ctx.beginPath();
-
-    // Depending on the canvasItem type, we draw shapes differently.
-    switch (type) {
-      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH:
-        const {path} = canvasItem;
-        const x = -centerX + startX;
-        const y = -centerY + startY;
-        path.forEach((point) => {
-          ctx.lineTo(x + point.x, y + point.y);
-        });
-        ctx.stroke();
-        break;
-      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
-        const {radius} = canvasItem;
-        ctx.arc(0, 0, radius, 0, 2 * Math.PI, false);
-        ctx.fill();
-        break;
-      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
-        const {xOffset, yOffset} = canvasItem;
-        ctx.moveTo(-xOffset / 2, -yOffset / 2);
-        ctx.lineTo(xOffset / 2, yOffset / 2);
-        ctx.stroke();
-        break;
-      case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
-        const {width, height} = canvasItem;
-        ctx.fillRect(-width / 2, -height/2, width, height);
-        break;
-      default:
-    }
-
-    // Always close the path.
-    ctx.closePath();
-
-    // Return the canvas back the original state before we were drawing the
-    // canvasItem.
-    ctx.rotate(-rotate * Math.PI / 180);
-    ctx.translate(-centerX, -centerY);
-  });
-}
 
 /**
  * Updates the layers of actions
@@ -14688,7 +14573,7 @@ function createLayer(canvasItem) {
   close.classList.add('closeLayer');
   close.innerText = 'delete';
   close.setAttribute('data-id', '' + id);
-  close.setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].DELETE);
+  close.setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].DELETE);
 
   const radio = document.createElement('input');
   radio.type = 'radio';
@@ -14697,26 +14582,26 @@ function createLayer(canvasItem) {
   radio.id = `selected-${id}`;
   radio.setAttribute('data-id', '' + id);
   radio.checked = true;
-  radio.setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT);
+  radio.setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].SELECT);
 
   const fillColorInput = document.createElement('input');
   fillColorInput.type = 'color';
   fillColorInput.value = fillColor;
   fillColorInput.setAttribute('data-id', '' + id);
   fillColorInput
-      .setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].CHANGE_FILL_COLOR);
+      .setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].CHANGE_FILL_COLOR);
 
   const lineColorInput = document.createElement('input');
   lineColorInput.type = 'color';
   lineColorInput.value = lineColor;
   lineColorInput.setAttribute('data-id', '' + id);
   lineColorInput
-      .setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].CHANGE_LINE_COLOR);
+      .setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].CHANGE_LINE_COLOR);
 
   const shape = document.createElement('i');
   shape.classList.add('material-icons');
   shape.classList.add('layerShape');
-  shape.innerText = __WEBPACK_IMPORTED_MODULE_3__const_action_shape_icon__["a" /* default */][type] || '';
+  shape.innerText = __WEBPACK_IMPORTED_MODULE_2__const_action_shape_icon__["a" /* default */][type] || '';
 
   li.appendChild(radio);
   li.appendChild(close);
@@ -14725,7 +14610,6 @@ function createLayer(canvasItem) {
   li.appendChild(lineColorInput);
   return li;
 }
-
 
 function renderLayers(canvasItemList, selectedCanvasItemId) {
   // Add canvasItem layers if they don't already exist.
@@ -14828,13 +14712,13 @@ layersEl.addEventListener('change', (ev) => {
   const action = dataset.action;
 
   switch (action) {
-    case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].CHANGE_FILL_COLOR:
+    case __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].CHANGE_FILL_COLOR:
       Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["c" /* modifyCanvasItem */])({fillColor: target.value, id});
       break;
-    case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].CHANGE_LINE_COLOR:
+    case __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].CHANGE_LINE_COLOR:
       Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["c" /* modifyCanvasItem */])({id, lineColor: target.value});
       break;
-    case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT:
+    case __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].SELECT:
       break;
     default:
   }
@@ -14850,11 +14734,11 @@ layersEl.addEventListener('click', (ev) => {
   }
 
   switch (action) {
-    case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].DELETE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].DELETE:
       Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["d" /* removeCanvasItem */])(id);
       Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["g" /* unsetPreviewCanvasItem */])();
       break;
-    case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT:
+    case __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].SELECT:
       Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["f" /* setSelectedCanvasItem */])({id});
       break;
     default:
@@ -26370,6 +26254,176 @@ const reducer = (state, dispatchedAction) => {
 };
 
 /* harmony default export */ __webpack_exports__["a"] = (reducer);
+
+
+/***/ }),
+/* 465 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__ = __webpack_require__(15);
+
+
+/**
+ * Handles clearing a canvas context.
+ * @param {!CanvasRenderingContext2D} ctx
+ */
+const clearCanvas = (ctx) => {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+};
+/* harmony export (immutable) */ __webpack_exports__["a"] = clearCanvas;
+
+
+/**
+ * Returns the center of a canvasItem
+ * @param canvasItem
+ * @returns {{centerX: number, centerY: number}}
+ */
+const getCanvasItemCenter = (canvasItem) => {
+  const {startX, startY, type} = canvasItem;
+  let centerX;
+  let centerY;
+  switch (type) {
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].BRUSH:
+      const {path} = canvasItem;
+      const edges = path.reduce((memo, point) => {
+        const {leftEdge, topEdge, rightEdge, bottomEdge} = memo;
+        if (leftEdge === null || point.x < leftEdge) {
+          memo.leftEdge = point.x;
+        }
+
+        if (rightEdge === null || point.x > rightEdge) {
+          memo.rightEdge = point.x;
+        }
+
+        if (topEdge === null || point.y < topEdge) {
+          memo.topEdge = point.y;
+        }
+
+        if (bottomEdge === null || point.y > bottomEdge) {
+          memo.bottomEdge = point.y;
+        }
+
+        return memo;
+      }, {leftEdge: null, topEdge: null, rightEdge: null, bottomEdge: null});
+      centerX = startX + (edges.leftEdge + edges.rightEdge) / 2;
+      centerY = startY + (edges.topEdge + edges.bottomEdge) / 2;
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].LINE:
+      const {xOffset, yOffset} = canvasItem;
+
+      centerX = startX + (xOffset / 2);
+      centerY = startY + (yOffset / 2);
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+      const {width, height} = canvasItem;
+      centerX = startX + (width / 2);
+      centerY = startY + (height / 2);
+      break;
+    default:
+      centerX = startX;
+      centerY = startY;
+  }
+  return {centerX, centerY};
+};
+/* unused harmony export getCanvasItemCenter */
+
+
+/**
+ * Renders a canvasItem onto a canvas context.
+ * @param {!CanvasRenderingContext2D} ctx
+ * @param canvasItem
+ * @param {number} centerX
+ * @param {number} centerY
+ */
+const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
+  const {startX, startY, type, rotate} = canvasItem;
+
+  // Rotate the canvas pivoted on the center of the canvasItem.
+  ctx.translate(centerX, centerY);
+  ctx.rotate(rotate * Math.PI / 180);
+
+  // Begin drawing a canvasItem
+  ctx.beginPath();
+
+  // Depending on the canvasItem type, we draw shapes differently.
+  switch (type) {
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].BRUSH:
+      const {path} = canvasItem;
+      const x = -centerX + startX;
+      const y = -centerY + startY;
+      path.forEach((point) => {
+        ctx.lineTo(x + point.x, y + point.y);
+      });
+      ctx.stroke();
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].CIRCLE:
+      const {radius} = canvasItem;
+      ctx.arc(0, 0, radius, 0, 2 * Math.PI, false);
+      ctx.fill();
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].LINE:
+      const {xOffset, yOffset} = canvasItem;
+      ctx.moveTo(-xOffset / 2, -yOffset / 2);
+      ctx.lineTo(xOffset / 2, yOffset / 2);
+      ctx.stroke();
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+      const {width, height} = canvasItem;
+      ctx.fillRect(-width / 2, -height/2, width, height);
+      break;
+    default:
+  }
+
+  // Always close the path.
+  ctx.closePath();
+
+  // Return the canvas back the original state before we were drawing the
+  // canvasItem.
+  ctx.rotate(-rotate * Math.PI / 180);
+  ctx.translate(-centerX, -centerY);
+};
+/* unused harmony export renderCanvasItem */
+
+
+/**
+ * Handles calling the appropriate methods needed to draw a canvasItem. This
+ * acts as a high order function, being passed in a canvas context and
+ * returning a method that will handle any given canvasItem.
+ * @param {!CanvasRenderingContext2D} ctx
+ * @returns {function(*=)}
+ */
+const canvasItemRenderer = (ctx) => {
+  return (canvasItem) => {
+    if (!canvasItem) {
+      return;
+    }
+
+    const {fillColor, lineColor} = canvasItem;
+    ctx.fillStyle = fillColor;
+    ctx.strokeStyle = lineColor;
+
+    // Retrieve the center of the canvasItem, used for centering.
+    const {centerX, centerY} = getCanvasItemCenter(canvasItem);
+
+    // Render the canvasItem
+    renderCanvasItem(ctx, canvasItem, centerX, centerY);
+  };
+};
+/* unused harmony export canvasItemRenderer */
+
+
+/**
+ * Draws the canvas given an array of canvasItems.
+ * @param {!CanvasRenderingContext2D} ctx
+ * @param {!Array<!CanvasItem>} canvasItemList
+ */
+const drawCanvas = (ctx, canvasItemList) => {
+  clearCanvas(ctx);
+  canvasItemList.forEach(canvasItemRenderer(ctx));
+};
+/* harmony export (immutable) */ __webpack_exports__["b"] = drawCanvas;
+
 
 
 /***/ })
