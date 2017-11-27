@@ -1,5 +1,5 @@
 {
-  "name": "axolotl",
+  "name": "axol",
   "version": "0.0.1",
   "description": "A simple canvas sketch pad.",
   "main": "webpack.config.js",
@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TheIronDev/axolotl.git"
+    "url": "git+https://github.com/TheIronDev/axol.git"
   },
   "author": "Tyler Stark <TheIronDeveloper@gmail.com> (https://theirondev.github.io/)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/TheIronDev/axolotl/issues"
+    "url": "https://github.com/TheIronDev/axol/issues"
   },
-  "homepage": "https://github.com/TheIronDev/axolotl#readme",
+  "homepage": "https://github.com/TheIronDev/axol#readme",
   "devDependencies": {
     "expect.js": "^0.3.1",
     "mocha": "^4.0.1",
