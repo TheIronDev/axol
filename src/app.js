@@ -1,4 +1,5 @@
 import {Observable} from 'rxjs/Rx';
+import CanvasActionEnums from './const/canvas-action-enum';
 import LayerCanvasActionEnums from './const/layer-action-enum';
 import ActionShapeIcon from './const/action-shape-icon';
 import {clearCanvas, drawCanvas} from './canvas-render';
@@ -8,10 +9,12 @@ import {
   highlightCanvasItem,
   modifyCanvasItem,
   removeCanvasItem,
+  removeSelectedCanvasItem,
   setPreviewCanvasItem,
   setSelectedCanvasItem,
   unsetPreviewCanvasItem,
   updateCurrentAction,
+  updateCurrentActionFromInput,
   updateCurrentActionFill,
   updateCurrentActionLine
 } from "./actions/actions";
@@ -30,6 +33,7 @@ store$.subscribe((state) => {
   drawCanvas(previewCtx, state.previewCanvasItemList);
   drawCanvas(targetCtx, state.currentCanvasItemList);
   renderLayers(state.currentCanvasItemList, state.selectedCanvasItemId);
+  updateSelectedAction(state.currentAction);
 });
 
 /**
@@ -124,10 +128,43 @@ function renderLayers(canvasItemList, selectedCanvasItemId) {
   }
 
   // Set value of the selected canvas item (in case it was deleted.)
-  const selected = document.getElementById(`#selected-${selectedCanvasItemId}`);
+  const selected = document.getElementById(`selected-${selectedCanvasItemId}`);
   if (selected) {
     selected.checked = true;
   }
+}
+
+/**
+ * Handles updating the selected canvas action.
+ * @param {!CanvasActionEnums} currentAction
+ */
+function updateSelectedAction(currentAction) {
+  let selectedInput;
+  switch (currentAction) {
+    case CanvasActionEnums.BRUSH:
+      selectedInput = document.getElementById('action-brush');
+      break;
+    case CanvasActionEnums.LINE:
+      selectedInput = document.getElementById('action-line');
+      break;
+    case CanvasActionEnums.MOVE:
+      selectedInput = document.getElementById('action-move');
+      break;
+    case CanvasActionEnums.CIRCLE:
+      selectedInput = document.getElementById('action-circle');
+      break;
+    case CanvasActionEnums.RECTANGLE:
+      selectedInput = document.getElementById('action-rectangle');
+      break;
+    case CanvasActionEnums.ROTATE:
+      selectedInput = document.getElementById('action-rotate');
+      break;
+    default:
+  }
+  if (!selectedInput) {
+    return;
+  }
+  selectedInput.checked = true;
 }
 
 const targetCanvasMousedown$ = Observable.fromEvent(targetCanvasEl, 'mousedown');
@@ -177,7 +214,7 @@ const canvasDraw$ = targetCanvasMousedown$
 canvasDraw$.subscribe();
 
 document.querySelectorAll('.actions').forEach((action) => {
-  action.addEventListener('change', (ev) => updateCurrentAction(ev.target.value));
+  action.addEventListener('change', (ev) => updateCurrentActionFromInput(ev.target.value));
 });
 
 document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
@@ -239,3 +276,30 @@ layersEl.addEventListener('mousemove', (ev) => {
 }, true);
 
 layersEl.addEventListener('mouseleave', () => unsetPreviewCanvasItem(), true);
+
+
+/**
+ * Handles keyboard shortcuts, more to come after I play around with this
+ * some more.
+ */
+document.addEventListener('keydown', (ev) => {
+  const {key} = ev;
+  switch (key) {
+    case 'a':
+      updateCurrentAction(CanvasActionEnums.RECTANGLE);
+      break;
+    case 's':
+      updateCurrentAction(CanvasActionEnums.CIRCLE);
+      break;
+    case 'd':
+      updateCurrentAction(CanvasActionEnums.LINE);
+      break;
+    case 'f':
+      updateCurrentAction(CanvasActionEnums.BRUSH);
+      break;
+    case 'Backspace':
+      removeSelectedCanvasItem();
+      break;
+    default:
+  }
+});

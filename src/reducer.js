@@ -6,6 +6,7 @@ const {
   HIGHLIGHT_CANVAS_ITEM,
   MODIFY_CANVAS_ITEM,
   REMOVE_CANVAS_ITEM,
+  REMOVE_SELECTED_CANVAS_ITEM,
   SET_PREVIEW_CANVAS_ITEM,
   SET_SELECTED_CANVAS_ITEM,
   UNSET_PREVIEW_CANVAS_ITEM,
@@ -206,6 +207,15 @@ const reducer = (state, dispatchedAction) => {
         return Object.assign(
             newState,
             {currentCanvasItemList, selectedCanvasItemId});
+    case REMOVE_SELECTED_CANVAS_ITEM:
+      currentCanvasItemList = state.currentCanvasItemList
+          .filter((canvasItem) => canvasItem.id !== state.selectedCanvasItemId);
+      selectedCanvasItemId = currentCanvasItemList.length ?
+          currentCanvasItemList[currentCanvasItemList.length - 1].id :
+          null;
+      return Object.assign(
+          newState,
+          {currentCanvasItemList, selectedCanvasItemId});
     case SET_PREVIEW_CANVAS_ITEM:
       const previewCanvasItemList = [createCanvasItem(state, payload)];
       return Object.assign(newState, {previewCanvasItemList});

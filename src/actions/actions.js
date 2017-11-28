@@ -8,6 +8,7 @@ const {
   HIGHLIGHT_CANVAS_ITEM,
   MODIFY_CANVAS_ITEM,
   REMOVE_CANVAS_ITEM,
+  REMOVE_SELECTED_CANVAS_ITEM,
   SET_SELECTED_CANVAS_ITEM,
   SET_PREVIEW_CANVAS_ITEM,
   UNSET_PREVIEW_CANVAS_ITEM,
@@ -62,6 +63,17 @@ export const removeCanvasItem = dispatcher((id) => {
 });
 
 /**
+ * Removes selected canvasItem from the currentCanvasItemList.
+ * @param {number} id
+ */
+export const removeSelectedCanvasItem = dispatcher((id) => {
+  return {
+    type: REMOVE_SELECTED_CANVAS_ITEM,
+    payload: null
+  };
+});
+
+/**
  * Adds a canvasItem to the previewCanvasItemList.
  * @param {!CanvasItem} canvasItem
  */
@@ -99,7 +111,17 @@ export const unsetPreviewCanvasItem = dispatcher(() => {
 /**
  * Updates the current action.
  */
-export const updateCurrentAction = dispatcher((actionInput) => {
+export const updateCurrentAction = dispatcher((currentAction) => {
+  return {
+    type: UPDATE_CURRENT_ACTION,
+    payload: {currentAction}
+  };
+});
+
+/**
+ * Updates the current action from a radio input.
+ */
+export const updateCurrentActionFromInput = dispatcher((actionInput) => {
   const currentAction = ActionInputMap[actionInput] || CanvasActionEnum.UNKNOWN;
   return {
     type: UPDATE_CURRENT_ACTION,

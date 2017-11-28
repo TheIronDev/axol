@@ -14466,6 +14466,7 @@ exports.VirtualAction = VirtualAction;
   HIGHLIGHT_CANVAS_ITEM: 'HIGHLIGHT_CANVAS_ITEM',
   MODIFY_CANVAS_ITEM: 'MODIFY_CANVAS_ITEM',
   REMOVE_CANVAS_ITEM: 'REMOVE_CANVAS_ITEM',
+  REMOVE_SELECTED_CANVAS_ITEM: 'REMOVE_SELECTED_CANVAS_ITEM',
   SET_PREVIEW_CANVAS_ITEM: 'SET_PREVIEW_CANVAS_ITEM',
   SET_SELECTED_CANVAS_ITEM: 'SET_SELECTED_CANVAS_ITEM',
   UNSET_PREVIEW_CANVAS_ITEM: 'UNSET_PREVIEW_CANVAS_ITEM',
@@ -14522,11 +14523,13 @@ const store$ = storeObserver$;
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__ = __webpack_require__(57);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__ = __webpack_require__(459);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__const_action_shape_icon__ = __webpack_require__(460);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__canvas_render__ = __webpack_require__(461);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__actions_actions__ = __webpack_require__(462);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__store__ = __webpack_require__(162);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__ = __webpack_require__(15);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__ = __webpack_require__(459);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__const_action_shape_icon__ = __webpack_require__(460);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__canvas_render__ = __webpack_require__(461);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__actions_actions__ = __webpack_require__(462);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__store__ = __webpack_require__(162);
+
 
 
 
@@ -14542,12 +14545,13 @@ const previewCanvasEl = document.getElementById('previewCanvas');
 const previewCtx = previewCanvasEl.getContext('2d');
 const layersEl = document.getElementById('layers');
 
-__WEBPACK_IMPORTED_MODULE_5__store__["b" /* store$ */].subscribe((state) => {
-  Object(__WEBPACK_IMPORTED_MODULE_3__canvas_render__["a" /* clearCanvas */])(previewCtx);
-  Object(__WEBPACK_IMPORTED_MODULE_3__canvas_render__["a" /* clearCanvas */])(targetCtx);
-  Object(__WEBPACK_IMPORTED_MODULE_3__canvas_render__["b" /* drawCanvas */])(previewCtx, state.previewCanvasItemList);
-  Object(__WEBPACK_IMPORTED_MODULE_3__canvas_render__["b" /* drawCanvas */])(targetCtx, state.currentCanvasItemList);
+__WEBPACK_IMPORTED_MODULE_6__store__["b" /* store$ */].subscribe((state) => {
+  Object(__WEBPACK_IMPORTED_MODULE_4__canvas_render__["a" /* clearCanvas */])(previewCtx);
+  Object(__WEBPACK_IMPORTED_MODULE_4__canvas_render__["a" /* clearCanvas */])(targetCtx);
+  Object(__WEBPACK_IMPORTED_MODULE_4__canvas_render__["b" /* drawCanvas */])(previewCtx, state.previewCanvasItemList);
+  Object(__WEBPACK_IMPORTED_MODULE_4__canvas_render__["b" /* drawCanvas */])(targetCtx, state.currentCanvasItemList);
   renderLayers(state.currentCanvasItemList, state.selectedCanvasItemId);
+  updateSelectedAction(state.currentAction);
 });
 
 /**
@@ -14573,7 +14577,7 @@ function createLayer(canvasItem) {
   close.classList.add('closeLayer');
   close.innerText = 'delete';
   close.setAttribute('data-id', '' + id);
-  close.setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].DELETE);
+  close.setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].DELETE);
 
   const radio = document.createElement('input');
   radio.type = 'radio';
@@ -14582,26 +14586,26 @@ function createLayer(canvasItem) {
   radio.id = `selected-${id}`;
   radio.setAttribute('data-id', '' + id);
   radio.checked = true;
-  radio.setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].SELECT);
+  radio.setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT);
 
   const fillColorInput = document.createElement('input');
   fillColorInput.type = 'color';
   fillColorInput.value = fillColor;
   fillColorInput.setAttribute('data-id', '' + id);
   fillColorInput
-      .setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].CHANGE_FILL_COLOR);
+      .setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].CHANGE_FILL_COLOR);
 
   const lineColorInput = document.createElement('input');
   lineColorInput.type = 'color';
   lineColorInput.value = lineColor;
   lineColorInput.setAttribute('data-id', '' + id);
   lineColorInput
-      .setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].CHANGE_LINE_COLOR);
+      .setAttribute('data-action', __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].CHANGE_LINE_COLOR);
 
   const shape = document.createElement('i');
   shape.classList.add('material-icons');
   shape.classList.add('layerShape');
-  shape.innerText = __WEBPACK_IMPORTED_MODULE_2__const_action_shape_icon__["a" /* default */][type] || '';
+  shape.innerText = __WEBPACK_IMPORTED_MODULE_3__const_action_shape_icon__["a" /* default */][type] || '';
 
   li.appendChild(radio);
   li.appendChild(close);
@@ -14642,10 +14646,43 @@ function renderLayers(canvasItemList, selectedCanvasItemId) {
   }
 
   // Set value of the selected canvas item (in case it was deleted.)
-  const selected = document.getElementById(`#selected-${selectedCanvasItemId}`);
+  const selected = document.getElementById(`selected-${selectedCanvasItemId}`);
   if (selected) {
     selected.checked = true;
   }
+}
+
+/**
+ * Handles updating the selected canvas action.
+ * @param {!CanvasActionEnums} currentAction
+ */
+function updateSelectedAction(currentAction) {
+  let selectedInput;
+  switch (currentAction) {
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH:
+      selectedInput = document.getElementById('action-brush');
+      break;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
+      selectedInput = document.getElementById('action-line');
+      break;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].MOVE:
+      selectedInput = document.getElementById('action-move');
+      break;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
+      selectedInput = document.getElementById('action-circle');
+      break;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
+      selectedInput = document.getElementById('action-rectangle');
+      break;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].ROTATE:
+      selectedInput = document.getElementById('action-rotate');
+      break;
+    default:
+  }
+  if (!selectedInput) {
+    return;
+  }
+  selectedInput.checked = true;
 }
 
 const targetCanvasMousedown$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'mousedown');
@@ -14679,15 +14716,15 @@ const canvasDraw$ = targetCanvasMousedown$
             path.push({x: endX - startX, y: endY - startY});
             return {endX, endY, startX, startY, id, path};
           })
-          .do(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["e" /* setPreviewCanvasItem */])
+          .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["f" /* setPreviewCanvasItem */])
 
           .takeUntil(
               docMouseUp$
                   // Only return the x/y offset of the canvas.
                   .map(() => ({endX, endY, startX, startY, id, path}))
                   // Render the primary canvas
-                  .do(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["a" /* addOrModifyCanvasItem */])
-                  .do(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["g" /* unsetPreviewCanvasItem */])
+                  .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["a" /* addOrModifyCanvasItem */])
+                  .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["h" /* unsetPreviewCanvasItem */])
           );
     });
 
@@ -14695,15 +14732,15 @@ const canvasDraw$ = targetCanvasMousedown$
 canvasDraw$.subscribe();
 
 document.querySelectorAll('.actions').forEach((action) => {
-  action.addEventListener('change', (ev) => Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["h" /* updateCurrentAction */])(ev.target.value));
+  action.addEventListener('change', (ev) => Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["k" /* updateCurrentActionFromInput */])(ev.target.value));
 });
 
 document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
-  Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["i" /* updateCurrentActionFill */])(ev.target.value);
+  Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["j" /* updateCurrentActionFill */])(ev.target.value);
 });
 
 document.querySelector('#actionLineColor').addEventListener('change', (ev) => {
-  Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["j" /* updateCurrentActionLine */])(ev.target.value);
+  Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["l" /* updateCurrentActionLine */])(ev.target.value);
 });
 
 layersEl.addEventListener('change', (ev) => {
@@ -14713,13 +14750,13 @@ layersEl.addEventListener('change', (ev) => {
   const action = dataset.action;
 
   switch (action) {
-    case __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].CHANGE_FILL_COLOR:
-      Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["c" /* modifyCanvasItem */])({fillColor: target.value, id});
+    case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].CHANGE_FILL_COLOR:
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["c" /* modifyCanvasItem */])({fillColor: target.value, id});
       break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].CHANGE_LINE_COLOR:
-      Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["c" /* modifyCanvasItem */])({id, lineColor: target.value});
+    case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].CHANGE_LINE_COLOR:
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["c" /* modifyCanvasItem */])({id, lineColor: target.value});
       break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].SELECT:
+    case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT:
       break;
     default:
   }
@@ -14735,12 +14772,12 @@ layersEl.addEventListener('click', (ev) => {
   }
 
   switch (action) {
-    case __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].DELETE:
-      Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["d" /* removeCanvasItem */])(id);
-      Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["g" /* unsetPreviewCanvasItem */])();
+    case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].DELETE:
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["d" /* removeCanvasItem */])(id);
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["h" /* unsetPreviewCanvasItem */])();
       break;
-    case __WEBPACK_IMPORTED_MODULE_1__const_layer_action_enum__["a" /* default */].SELECT:
-      Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["f" /* setSelectedCanvasItem */])({id});
+    case __WEBPACK_IMPORTED_MODULE_2__const_layer_action_enum__["a" /* default */].SELECT:
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["g" /* setSelectedCanvasItem */])({id});
       break;
     default:
   }
@@ -14750,13 +14787,40 @@ layersEl.addEventListener('click', (ev) => {
 layersEl.addEventListener('mousemove', (ev) => {
   const id = parseInt(ev.target.dataset.id, 10);
   if (Number.isNaN(id)) {
-    Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["g" /* unsetPreviewCanvasItem */])();
+    Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["h" /* unsetPreviewCanvasItem */])();
     return;
   }
-  Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["b" /* highlightCanvasItem */])(id);
+  Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["b" /* highlightCanvasItem */])(id);
 }, true);
 
-layersEl.addEventListener('mouseleave', () => Object(__WEBPACK_IMPORTED_MODULE_4__actions_actions__["g" /* unsetPreviewCanvasItem */])(), true);
+layersEl.addEventListener('mouseleave', () => Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["h" /* unsetPreviewCanvasItem */])(), true);
+
+
+/**
+ * Handles keyboard shortcuts, more to come after I play around with this
+ * some more.
+ */
+document.addEventListener('keydown', (ev) => {
+  const {key} = ev;
+  switch (key) {
+    case 'a':
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["i" /* updateCurrentAction */])(__WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE);
+      break;
+    case 's':
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["i" /* updateCurrentAction */])(__WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE);
+      break;
+    case 'd':
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["i" /* updateCurrentAction */])(__WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE);
+      break;
+    case 'f':
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["i" /* updateCurrentAction */])(__WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH);
+      break;
+    case 'Backspace':
+      Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["e" /* removeSelectedCanvasItem */])();
+      break;
+    default:
+  }
+});
 
 
 /***/ }),
@@ -26014,6 +26078,7 @@ const {
   HIGHLIGHT_CANVAS_ITEM,
   MODIFY_CANVAS_ITEM,
   REMOVE_CANVAS_ITEM,
+  REMOVE_SELECTED_CANVAS_ITEM,
   SET_SELECTED_CANVAS_ITEM,
   SET_PREVIEW_CANVAS_ITEM,
   UNSET_PREVIEW_CANVAS_ITEM,
@@ -26076,6 +26141,19 @@ const removeCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /*
 
 
 /**
+ * Removes selected canvasItem from the currentCanvasItemList.
+ * @param {number} id
+ */
+const removeSelectedCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((id) => {
+  return {
+    type: REMOVE_SELECTED_CANVAS_ITEM,
+    payload: null
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["e"] = removeSelectedCanvasItem;
+
+
+/**
  * Adds a canvasItem to the previewCanvasItemList.
  * @param {!CanvasItem} canvasItem
  */
@@ -26085,7 +26163,7 @@ const setPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a
     payload: canvasItem
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["e"] = setPreviewCanvasItem;
+/* harmony export (immutable) */ __webpack_exports__["f"] = setPreviewCanvasItem;
 
 
 /**
@@ -26101,7 +26179,7 @@ const setSelectedCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["
     payload: {selectedCanvasItemId: canvasItem.id}
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["f"] = setSelectedCanvasItem;
+/* harmony export (immutable) */ __webpack_exports__["g"] = setSelectedCanvasItem;
 
 
 /**
@@ -26113,20 +26191,32 @@ const unsetPreviewCanvasItem = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__[
     payload: {previewCanvasItemList: []}
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["g"] = unsetPreviewCanvasItem;
+/* harmony export (immutable) */ __webpack_exports__["h"] = unsetPreviewCanvasItem;
 
 
 /**
  * Updates the current action.
  */
-const updateCurrentAction = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((actionInput) => {
+const updateCurrentAction = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((currentAction) => {
+  return {
+    type: UPDATE_CURRENT_ACTION,
+    payload: {currentAction}
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["i"] = updateCurrentAction;
+
+
+/**
+ * Updates the current action from a radio input.
+ */
+const updateCurrentActionFromInput = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((actionInput) => {
   const currentAction = __WEBPACK_IMPORTED_MODULE_0__const_action_input_map__["a" /* default */][actionInput] || __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].UNKNOWN;
   return {
     type: UPDATE_CURRENT_ACTION,
     payload: {currentAction}
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["h"] = updateCurrentAction;
+/* harmony export (immutable) */ __webpack_exports__["k"] = updateCurrentActionFromInput;
 
 
 /**
@@ -26138,7 +26228,7 @@ const updateCurrentActionFill = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__
     payload: {currentActionFillColor}
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["i"] = updateCurrentActionFill;
+/* harmony export (immutable) */ __webpack_exports__["j"] = updateCurrentActionFill;
 
 
 /**
@@ -26150,7 +26240,7 @@ const updateCurrentActionLine = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__
     payload: {currentActionLineColor}
   };
 });
-/* harmony export (immutable) */ __webpack_exports__["j"] = updateCurrentActionLine;
+/* harmony export (immutable) */ __webpack_exports__["l"] = updateCurrentActionLine;
 
 
 
@@ -26207,6 +26297,7 @@ const {
   HIGHLIGHT_CANVAS_ITEM,
   MODIFY_CANVAS_ITEM,
   REMOVE_CANVAS_ITEM,
+  REMOVE_SELECTED_CANVAS_ITEM,
   SET_PREVIEW_CANVAS_ITEM,
   SET_SELECTED_CANVAS_ITEM,
   UNSET_PREVIEW_CANVAS_ITEM,
@@ -26407,6 +26498,15 @@ const reducer = (state, dispatchedAction) => {
         return Object.assign(
             newState,
             {currentCanvasItemList, selectedCanvasItemId});
+    case REMOVE_SELECTED_CANVAS_ITEM:
+      currentCanvasItemList = state.currentCanvasItemList
+          .filter((canvasItem) => canvasItem.id !== state.selectedCanvasItemId);
+      selectedCanvasItemId = currentCanvasItemList.length ?
+          currentCanvasItemList[currentCanvasItemList.length - 1].id :
+          null;
+      return Object.assign(
+          newState,
+          {currentCanvasItemList, selectedCanvasItemId});
     case SET_PREVIEW_CANVAS_ITEM:
       const previewCanvasItemList = [createCanvasItem(state, payload)];
       return Object.assign(newState, {previewCanvasItemList});
