@@ -14685,20 +14685,48 @@ function updateSelectedAction(currentAction) {
   selectedInput.checked = true;
 }
 
-const targetCanvasMousedown$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'mousedown');
+const targetCanvasMousedown$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'mousedown')
+    .map((ev) => {
+      const {offsetX: startX, offsetY: startY} = ev;
+      return {startX, startY};
+    });
+const targetCanvastouchStart$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'touchstart')
+    .map((ev) => {
+      const {touches} = ev;
+      const {target} = touches[0];
+      const {x, y} = target.getBoundingClientRect();
+      let startX = touches[0].clientX - x;
+      let startY = touches[0].clientY - y;
+      return {startX, startY};
+    });
 const targetCanvasMouseMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'mousemove')
-    .throttleTime(16);
+    .throttleTime(16)
+    .map((ev) => {
+      const {offsetX, offsetY} = ev;
+      return {localEndX: offsetX, localEndY: offsetY};
+    });
+const targetCanvasTouchMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'touchmove')
+    .throttleTime(16)
+    .map((ev) => {
+      const {touches} = ev;
+      const {target} = touches[0];
+      const {x, y} = target.getBoundingClientRect();
+      let localEndX = touches[0].clientX - x;
+      let localEndY = touches[0].clientY - y;
+      return {localEndX, localEndY};
+    });
 const docMouseUp$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(document, 'mouseup');
+const docTouchEnd$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(document, 'touchend');
+
+const startDraw$ = targetCanvasMousedown$.merge(targetCanvastouchStart$);
+const draw$ = targetCanvasMouseMove$.merge(targetCanvasTouchMove$);
+const endDraw$ = docMouseUp$.merge(docTouchEnd$);
 
 /**
  * Handles drawing a canvas by observing a mousedown, followed by mousemoves,
  * which will get recorded until mouseup. Essentially its drag-and-drop.
  */
-const canvasDraw$ = targetCanvasMousedown$
-    .map((ev) => {
-      const {offsetX: startX, offsetY: startY} = ev;
-      return {startX, startY};
-    })
+const drawFlow$ = startDraw$
     .scan((memo, state) => {
       // Generate a new id that may or may not be used, we just want a
       // semblance of uniqueness.
@@ -14707,19 +14735,18 @@ const canvasDraw$ = targetCanvasMousedown$
     .switchMap(({startX, startY, id}) => {
       const path = [];
       let endX, endY;
-      return targetCanvasMouseMove$
-          // Map the mousemove event to a simple object
+      return draw$
           .map((ev) => {
-            const {offsetX, offsetY} = ev;
-            endX = offsetX;
-            endY = offsetY;
+            const {localEndX, localEndY} = ev;
+            endX = localEndX;
+            endY = localEndY;
             path.push({x: endX - startX, y: endY - startY});
             return {endX, endY, startX, startY, id, path};
           })
           .do(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["f" /* setPreviewCanvasItem */])
 
           .takeUntil(
-              docMouseUp$
+              endDraw$
                   // Only return the x/y offset of the canvas.
                   .map(() => ({endX, endY, startX, startY, id, path}))
                   // Render the primary canvas
@@ -14729,7 +14756,7 @@ const canvasDraw$ = targetCanvasMousedown$
     });
 
 // We won't see any canvas drawing unless we subscribe to the observable.
-canvasDraw$.subscribe();
+drawFlow$.subscribe();
 
 document.querySelectorAll('.actions').forEach((action) => {
   action.addEventListener('change', (ev) => Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["k" /* updateCurrentActionFromInput */])(ev.target.value));
