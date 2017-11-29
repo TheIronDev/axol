@@ -13,15 +13,7 @@
 <h1>Axolotl</h1>
 <main id="app" class="app">
   <section>
-    <h2>Canvas</h2>
-    <div class="canvasWrapper">
-      <canvas class="previewCanvas" height="500" id="previewCanvas" width="500"></canvas>
-      <canvas class="canvas" height="500" id="targetCanvas" width="500"></canvas>
-    </div>
-  </section>
-  <section class="sidebar">
     <section class="actions">
-      <h2>Create</h2>
       <input class="action" id="action-rectangle" name="action" type="radio" value="rectangle" checked>
       <label class="actionLabel" for="action-rectangle">
         <i class="material-icons">crop_square</i>
@@ -41,16 +33,6 @@
       <label class="actionLabel" for="action-brush">
         <i class="material-icons">brush</i>
       </label>
-    </section>
-    <section>
-      <input id="actionFillColor" type="color">
-      <label for="actionFillColor">Fill</label>
-
-      <input id="actionLineColor" type="color">
-      <label for="actionLineColor">Line</label>
-    </section>
-    <section class="actions">
-      <h2>Edit</h2>
 
       <input class="action" id="action-move" name="action" type="radio" value="move">
       <label class="actionLabel" for="action-move">
@@ -62,11 +44,25 @@
         <i class="material-icons">crop_rotate</i>
       </label>
     </section>
-    <section>
+    <section class="palette">
+      <input id="actionFillColor" type="color">
+      <label for="actionFillColor">Fill</label>
+
+      <input id="actionLineColor" type="color">
+      <label for="actionLineColor">Line</label>
+    </section>
+  </section>
+
+  <section class="renderedResults">
+    <section class="canvasWrapper">
+      <h2>Canvas</h2>
+      <canvas class="previewCanvas" height="500" id="previewCanvas" width="500"></canvas>
+      <canvas class="canvas" height="500" id="targetCanvas" width="500"></canvas>
+    </section>
+    <section class="layersWrapper">
       <h2>Layers</h2>
       <ul class="layers" id="layers"></ul>
     </section>
-
   </section>
 </main>
 <script src="./dest/bundle.js"></script>

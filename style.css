@@ -1,14 +1,14 @@
 * {box-sizing: border-box}
-html, body {height: 100%; margin: 0; overflow: hidden; padding: 0}
+html, body {margin: 0; padding: 0}
 html {font-size: 10px;}
 body {background: #fafafa;font: 10px 'Raleway', sans-serif;padding: 1rem}
 
-.app {display: flex}
+.app {display: flex; flex-direction: column}
+.renderedResults {display: flex; flex-direction: row}
 .canvas {background: #fff; box-shadow: 0 5px 5px -5px #000; cursor: crosshair}
 .canvasWrapper {position: relative}
 .previewCanvas {opacity: .9;pointer-events: none;position: absolute}
 
-.sidebar {min-width: 20rem;}
 .action {display: none;}
 .actionLabel {
   border: 1px solid #ccc;
@@ -23,3 +23,9 @@ body {background: #fafafa;font: 10px 'Raleway', sans-serif;padding: 1rem}
 .layer {align-items: center;display: flex}
 .layerShape {border: 1px solid #ccc; border-radius: 3px}
 .closeLayer {cursor: pointer}
+
+@media (max-width: 30rem) {
+  body {overflow: hidden}
+  .app {flex-direction: row}
+  .renderedResults {flex-direction: column}
+}
