@@ -8,6 +8,7 @@ import {
   addOrModifyCanvasItem,
   highlightCanvasItem,
   modifyCanvasItem,
+  copyCanvasItem,
   removeCanvasItem,
   removeSelectedCanvasItem,
   setPreviewCanvasItem,
@@ -56,10 +57,17 @@ function createLayer(canvasItem) {
 
   const close = document.createElement('i');
   close.classList.add('material-icons');
-  close.classList.add('closeLayer');
+  close.classList.add('layerAction');
   close.innerText = 'delete';
   close.setAttribute('data-id', '' + id);
   close.setAttribute('data-action', LayerCanvasActionEnums.DELETE);
+
+  const copy = document.createElement('i');
+  copy.classList.add('material-icons');
+  copy.classList.add('layerAction');
+  copy.innerText = 'content_copy';
+  copy.setAttribute('data-id', '' + id);
+  copy.setAttribute('data-action', LayerCanvasActionEnums.COPY);
 
   const radio = document.createElement('input');
   radio.type = 'radio';
@@ -90,6 +98,7 @@ function createLayer(canvasItem) {
   shape.innerText = ActionShapeIcon[type] || '';
 
   li.appendChild(radio);
+  li.appendChild(copy);
   li.appendChild(close);
   li.appendChild(shape);
   li.appendChild(fillColorInput);
@@ -209,12 +218,7 @@ const endDraw$ = docMouseUp$.merge(docTouchEnd$);
  * which will get recorded until mouseup. Essentially its drag-and-drop.
  */
 const drawFlow$ = startDraw$
-    .scan((memo, state) => {
-      // Generate a new id that may or may not be used, we just want a
-      // semblance of uniqueness.
-      return Object.assign({}, state, {id: memo.id + 1});
-    }, {id: 0})
-    .switchMap(({startX, startY, id}) => {
+    .switchMap(({startX, startY}) => {
       const path = [];
       let endX, endY;
       return draw$
@@ -223,14 +227,14 @@ const drawFlow$ = startDraw$
             endX = localEndX;
             endY = localEndY;
             path.push({x: endX - startX, y: endY - startY});
-            return {endX, endY, startX, startY, id, path};
+            return {endX, endY, startX, startY, path};
           })
           .do(setPreviewCanvasItem)
 
           .takeUntil(
               endDraw$
                   // Only return the x/y offset of the canvas.
-                  .map(() => ({endX, endY, startX, startY, id, path}))
+                  .map(() => ({endX, endY, startX, startY, path}))
                   // Render the primary canvas
                   .do(addOrModifyCanvasItem)
                   .do(unsetPreviewCanvasItem)
@@ -281,6 +285,9 @@ layersEl.addEventListener('click', (ev) => {
   }
 
   switch (action) {
+    case LayerCanvasActionEnums.COPY:
+      copyCanvasItem(id);
+      break;
     case LayerCanvasActionEnums.DELETE:
       removeCanvasItem(id);
       unsetPreviewCanvasItem();

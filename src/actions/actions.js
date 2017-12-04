@@ -5,6 +5,7 @@ import dispatcher from '../dispatcher';
 
 const {
   ADD_OR_MODIFY_CANVAS_ITEM,
+  COPY_CANVAS_ITEM,
   HIGHLIGHT_CANVAS_ITEM,
   MODIFY_CANVAS_ITEM,
   REMOVE_CANVAS_ITEM,
@@ -48,6 +49,17 @@ export const modifyCanvasItem = dispatcher((canvasItem) => {
   return {
     type: MODIFY_CANVAS_ITEM,
     payload: canvasItem
+  };
+});
+
+/**
+ * Copies a canvasItem from the currentCanvasItemList.
+ * @param {number} id
+ */
+export const copyCanvasItem = dispatcher((id) => {
+  return {
+    type: COPY_CANVAS_ITEM,
+    payload: id
   };
 });
 
@@ -148,3 +160,5 @@ export const updateCurrentActionLine = dispatcher((currentActionLineColor) => {
     payload: {currentActionLineColor}
   };
 });
+
+

@@ -6,6 +6,7 @@ const initialState = {
   currentCanvasItemList: [],
   previewCanvasItemList: [],
   currentAction: ActionEnum.RECTANGLE,
+  currentActionId: 1,
   currentActionFillColor: '#000',
   currentActionLineColor: '#000',
   selectedCanvasItemId: null

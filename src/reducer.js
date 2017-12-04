@@ -3,6 +3,7 @@ import CanvasActionEnum from './const/canvas-action-enum';
 
 const {
   ADD_OR_MODIFY_CANVAS_ITEM,
+  COPY_CANVAS_ITEM,
   HIGHLIGHT_CANVAS_ITEM,
   MODIFY_CANVAS_ITEM,
   REMOVE_CANVAS_ITEM,
@@ -33,11 +34,16 @@ let AppState;
  * @return {?CanvasItem}
  */
 function createNewCanvasItem(state, payload) {
-  const {currentActionFillColor, currentActionLineColor, currentAction} = state;
-  const {startX, startY, endX, endY, id, path} = payload;
+  const {
+    currentAction,
+    currentActionId,
+    currentActionFillColor,
+    currentActionLineColor,
+  } = state;
+  const {startX, startY, endX, endY, path} = payload;
   const canvasItem = {
     fillColor: currentActionFillColor,
-    id,
+    id: currentActionId,
     lineColor: currentActionLineColor,
     rotate: 0,
     startX,
@@ -84,7 +90,7 @@ function createNewCanvasItem(state, payload) {
  */
 function modifyCanvasItem(state, payload) {
   const {startX, startY, endX, endY} = payload;
-  let selectedCanvasItem= state.currentCanvasItemList.find(
+  let selectedCanvasItem = state.currentCanvasItemList.find(
       (canvasItem) =>  canvasItem.id === state.selectedCanvasItemId);
   if (!selectedCanvasItem) {
     return null;
@@ -148,6 +154,7 @@ const reducer = (state, dispatchedAction) => {
   const newState = Object.assign({}, state);
 
   let currentCanvasItemList;
+  let currentActionId;
   let selectedCanvasItemId;
 
   switch (type) {
@@ -159,11 +166,12 @@ const reducer = (state, dispatchedAction) => {
         case CanvasActionEnum.RECTANGLE:
         case CanvasActionEnum.LINE:
           selectedCanvasItemId = newCanvasItem.id;
+          currentActionId = state.currentActionId + 1;
           currentCanvasItemList =
               [...state.currentCanvasItemList, newCanvasItem];
           return Object.assign(
               newState,
-              {currentCanvasItemList, selectedCanvasItemId});
+              {currentActionId, currentCanvasItemList, selectedCanvasItemId});
         case CanvasActionEnum.MOVE:
         case CanvasActionEnum.ROTATE:
           currentCanvasItemList = state.currentCanvasItemList
@@ -175,6 +183,26 @@ const reducer = (state, dispatchedAction) => {
               });
           return Object.assign(newState, {currentCanvasItemList});
       }
+    case COPY_CANVAS_ITEM:
+      currentActionId = state.currentActionId + 1;
+      selectedCanvasItemId = state.currentActionId;
+      currentCanvasItemList = [];
+
+      state.currentCanvasItemList.forEach((canvasItem) => {
+        currentCanvasItemList.push(canvasItem);
+        if (canvasItem.id === payload) {
+          const newCanvasItem = Object.assign(
+              {},
+              canvasItem,
+              {id: state.currentActionId});
+
+          currentCanvasItemList.push(newCanvasItem);
+        }
+      });
+
+      return Object.assign(
+          newState,
+          {currentActionId, currentCanvasItemList, selectedCanvasItemId});
     case HIGHLIGHT_CANVAS_ITEM:
       const canvasItemToHighlight = state.currentCanvasItemList
           .find((canvasItem) => canvasItem.id === payload);
