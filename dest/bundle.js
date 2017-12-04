@@ -14474,6 +14474,7 @@ exports.VirtualAction = VirtualAction;
   UPDATE_CURRENT_ACTION: 'UPDATE_CURRENT_ACTION',
   UPDATE_CURRENT_ACTION_FILL: 'UPDATE_CURRENT_ACTION_FILL',
   UPDATE_CURRENT_ACTION_LINE: 'UPDATE_CURRENT_ACTION_LINE',
+  UPDATE_CURRENT_ACTION_LINE_WIDTH: 'UPDATE_CURRENT_ACTION_LINE_WIDTH',
 });
 
 /***/ }),
@@ -14496,6 +14497,7 @@ const initialState = {
   currentActionId: 1,
   currentActionFillColor: '#000',
   currentActionLineColor: '#000',
+  currentActionLineWidth: 1,
   selectedCanvasItemId: null
 };
 
@@ -14773,6 +14775,10 @@ document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
 
 document.querySelector('#actionLineColor').addEventListener('change', (ev) => {
   Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["m" /* updateCurrentActionLine */])(ev.target.value);
+});
+
+document.querySelector('#actionLineWidth').addEventListener('change', (ev) => {
+  Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["n" /* updateCurrentActionLineWidth */])(ev.target.value);
 });
 
 layersEl.addEventListener('change', (ev) => {
@@ -26069,9 +26075,10 @@ const canvasItemRenderer = (ctx) => {
       return;
     }
 
-    const {fillColor, lineColor} = canvasItem;
+    const {fillColor, lineColor, lineWidth} = canvasItem;
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
+    ctx.lineWidth = lineWidth;
 
     // Retrieve the center of the canvasItem, used for centering.
     const {centerX, centerY} = getCanvasItemCenter(canvasItem);
@@ -26123,6 +26130,7 @@ const {
   UPDATE_CURRENT_ACTION,
   UPDATE_CURRENT_ACTION_FILL,
   UPDATE_CURRENT_ACTION_LINE,
+  UPDATE_CURRENT_ACTION_LINE_WIDTH,
 } = __WEBPACK_IMPORTED_MODULE_2__const_action__["a" /* default */];
 
 
@@ -26294,8 +26302,20 @@ const updateCurrentActionLine = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__
 /* harmony export (immutable) */ __webpack_exports__["m"] = updateCurrentActionLine;
 
 
+/**
+ * Updates the current action's line width.
+ */
+const updateCurrentActionLineWidth = Object(__WEBPACK_IMPORTED_MODULE_3__dispatcher__["a" /* default */])((currentActionLineWidth) => {
+  return {
+    type: UPDATE_CURRENT_ACTION_LINE_WIDTH,
+    payload: {currentActionLineWidth}
+  };
+});
+/* harmony export (immutable) */ __webpack_exports__["n"] = updateCurrentActionLineWidth;
 
 
+
+updateCurrentActionLineWidth
 
 /***/ }),
 /* 463 */
@@ -26357,7 +26377,8 @@ const {
   UNSET_PREVIEW_CANVAS_ITEM,
   UPDATE_CURRENT_ACTION,
   UPDATE_CURRENT_ACTION_FILL,
-  UPDATE_CURRENT_ACTION_LINE
+  UPDATE_CURRENT_ACTION_LINE,
+  UPDATE_CURRENT_ACTION_LINE_WIDTH
 } = __WEBPACK_IMPORTED_MODULE_0__const_action__["a" /* default */];
 
 /**
@@ -26383,12 +26404,14 @@ function createNewCanvasItem(state, payload) {
     currentActionId,
     currentActionFillColor,
     currentActionLineColor,
+    currentActionLineWidth,
   } = state;
   const {startX, startY, endX, endY, path} = payload;
   const canvasItem = {
     fillColor: currentActionFillColor,
     id: currentActionId,
     lineColor: currentActionLineColor,
+    lineWidth: currentActionLineWidth,
     rotate: 0,
     startX,
     startY
@@ -26599,6 +26622,7 @@ const reducer = (state, dispatchedAction) => {
     case UPDATE_CURRENT_ACTION:
     case UPDATE_CURRENT_ACTION_FILL:
     case UPDATE_CURRENT_ACTION_LINE:
+    case UPDATE_CURRENT_ACTION_LINE_WIDTH:
       return Object.assign(newState, payload);
     default:
       return state;

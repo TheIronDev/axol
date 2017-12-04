@@ -13,7 +13,8 @@ const {
   UNSET_PREVIEW_CANVAS_ITEM,
   UPDATE_CURRENT_ACTION,
   UPDATE_CURRENT_ACTION_FILL,
-  UPDATE_CURRENT_ACTION_LINE
+  UPDATE_CURRENT_ACTION_LINE,
+  UPDATE_CURRENT_ACTION_LINE_WIDTH
 } = action;
 
 /**
@@ -39,12 +40,14 @@ function createNewCanvasItem(state, payload) {
     currentActionId,
     currentActionFillColor,
     currentActionLineColor,
+    currentActionLineWidth,
   } = state;
   const {startX, startY, endX, endY, path} = payload;
   const canvasItem = {
     fillColor: currentActionFillColor,
     id: currentActionId,
     lineColor: currentActionLineColor,
+    lineWidth: currentActionLineWidth,
     rotate: 0,
     startX,
     startY
@@ -255,6 +258,7 @@ const reducer = (state, dispatchedAction) => {
     case UPDATE_CURRENT_ACTION:
     case UPDATE_CURRENT_ACTION_FILL:
     case UPDATE_CURRENT_ACTION_LINE:
+    case UPDATE_CURRENT_ACTION_LINE_WIDTH:
       return Object.assign(newState, payload);
     default:
       return state;

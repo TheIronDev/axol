@@ -16,6 +16,7 @@ const {
   UPDATE_CURRENT_ACTION,
   UPDATE_CURRENT_ACTION_FILL,
   UPDATE_CURRENT_ACTION_LINE,
+  UPDATE_CURRENT_ACTION_LINE_WIDTH,
 } = action;
 
 
@@ -161,4 +162,15 @@ export const updateCurrentActionLine = dispatcher((currentActionLineColor) => {
   };
 });
 
+/**
+ * Updates the current action's line width.
+ */
+export const updateCurrentActionLineWidth = dispatcher((currentActionLineWidth) => {
+  return {
+    type: UPDATE_CURRENT_ACTION_LINE_WIDTH,
+    payload: {currentActionLineWidth}
+  };
+});
 
+
+updateCurrentActionLineWidth

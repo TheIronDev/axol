@@ -17,7 +17,8 @@ import {
   updateCurrentAction,
   updateCurrentActionFromInput,
   updateCurrentActionFill,
-  updateCurrentActionLine
+  updateCurrentActionLine,
+  updateCurrentActionLineWidth,
 } from "./actions/actions";
 import {store$} from './store';
 
@@ -254,6 +255,10 @@ document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
 
 document.querySelector('#actionLineColor').addEventListener('change', (ev) => {
   updateCurrentActionLine(ev.target.value);
+});
+
+document.querySelector('#actionLineWidth').addEventListener('change', (ev) => {
+  updateCurrentActionLineWidth(ev.target.value);
 });
 
 layersEl.addEventListener('change', (ev) => {

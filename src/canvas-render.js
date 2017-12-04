@@ -130,9 +130,10 @@ export const canvasItemRenderer = (ctx) => {
       return;
     }
 
-    const {fillColor, lineColor} = canvasItem;
+    const {fillColor, lineColor, lineWidth} = canvasItem;
     ctx.fillStyle = fillColor;
     ctx.strokeStyle = lineColor;
+    ctx.lineWidth = lineWidth;
 
     // Retrieve the center of the canvasItem, used for centering.
     const {centerX, centerY} = getCanvasItemCenter(canvasItem);

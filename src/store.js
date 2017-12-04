@@ -9,6 +9,7 @@ const initialState = {
   currentActionId: 1,
   currentActionFillColor: '#000',
   currentActionLineColor: '#000',
+  currentActionLineWidth: 1,
   selectedCanvasItemId: null
 };
 
