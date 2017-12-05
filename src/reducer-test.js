@@ -16,6 +16,7 @@ function getCanvasItem(payload) {
   const baseCanvasItem = {
     fillColor: '#000',
     lineColor: '#000',
+    lineWidth: 1,
     rotate: 0,
     startX: 0,
     startY: 0
@@ -32,8 +33,10 @@ describe('reducer', () => {
       currentCanvasItemList: [],
       previewCanvasItemList: [],
       currentAction: RECTANGLE,
+      currentActionId: 1,
       currentActionFillColor: '#000',
       currentActionLineColor: '#000',
+      currentActionLineWidth: 1,
       selectedCanvasItemId: null
     };
     dispatchedAction = {type: '', payload: ''};
@@ -54,10 +57,11 @@ describe('reducer', () => {
         payload: {startX: 0, startY: 0, endX: 1, endY: 0, id: 29}
       };
       const expectedCanvasItem = getCanvasItem(
-          {id: 29, radius: 1, type: CIRCLE});
+          {id: 1, radius: 1, type: CIRCLE});
 
       const result = reducer(initialState, dispatchedAction);
       expect(result.currentCanvasItemList).to.eql([expectedCanvasItem]);
+      expect(result.currentActionId).to.eql(initialState.currentActionId + 1);
     });
 
     it('should add a rectangle if currentAction is RECTANGLE', () => {
@@ -67,10 +71,11 @@ describe('reducer', () => {
         payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 30}
       };
       const expectedCanvasItem = getCanvasItem(
-          {id: 30, height: 2, type: RECTANGLE, width: 2});
+          {id: 1, height: 2, type: RECTANGLE, width: 2});
 
       const result = reducer(initialState, dispatchedAction);
       expect(result.currentCanvasItemList).to.eql([expectedCanvasItem]);
+      expect(result.currentActionId).to.eql(initialState.currentActionId + 1);
     });
 
     it('should add a line if currentAction is LINE', () => {
@@ -81,7 +86,7 @@ describe('reducer', () => {
       };
 
       const expectedCanvasItem = getCanvasItem(
-          {id: 31, type: LINE, yOffset: 2, xOffset: 2});
+          {id: 1, type: LINE, yOffset: 2, xOffset: 2});
 
       const result = reducer(initialState, dispatchedAction);
       expect(result.currentCanvasItemList).to.eql([expectedCanvasItem]);
@@ -101,7 +106,7 @@ describe('reducer', () => {
       };
 
       const expectedCanvasItem = getCanvasItem(
-          {id: 31, type: BRUSH, path});
+          {id: 1, type: BRUSH, path});
 
       const result = reducer(initialState, dispatchedAction);
       expect(result.currentCanvasItemList).to.eql([expectedCanvasItem]);
@@ -206,7 +211,7 @@ describe('reducer', () => {
       };
 
       const expected =
-          getCanvasItem({id: 30, type: LINE, yOffset: 2, xOffset: 2});
+          getCanvasItem({id: 1, type: LINE, yOffset: 2, xOffset: 2});
 
       const result = reducer(initialState, dispatchedAction);
       expect(result.previewCanvasItemList[0]).to.eql(expected);
