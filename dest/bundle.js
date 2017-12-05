@@ -14554,7 +14554,8 @@ __WEBPACK_IMPORTED_MODULE_6__store__["b" /* store$ */].subscribe((state) => {
   Object(__WEBPACK_IMPORTED_MODULE_4__canvas_render__["a" /* clearCanvas */])(targetCtx);
   Object(__WEBPACK_IMPORTED_MODULE_4__canvas_render__["b" /* drawCanvas */])(previewCtx, state.previewCanvasItemList);
   Object(__WEBPACK_IMPORTED_MODULE_4__canvas_render__["b" /* drawCanvas */])(targetCtx, state.currentCanvasItemList);
-  renderLayers(state.currentCanvasItemList, state.selectedCanvasItemId);
+  renderLayers(state.currentCanvasItemList);
+  checkSelectedLayer(state.selectedCanvasItemId);
   updateSelectedAction(state.currentAction);
 });
 
@@ -14633,20 +14634,16 @@ function createLayer(canvasItem) {
 }
 
 /**
- *
  * @param {!Array<!CanvasItem>} canvasItemList
- * @param {number} selectedCanvasItemId
  */
-function renderLayers(canvasItemList, selectedCanvasItemId) {
+function renderLayers(canvasItemList) {
   // Add canvasItem layers if they don't already exist.
-  canvasItemList.forEach((canvasItem) => {
+  canvasItemList.forEach((canvasItem, index) => {
     if (!document.getElementById(`action-${canvasItem.id}`)) {
       const newLayer = createLayer(canvasItem);
-      if (layersEl.firstElementChild) {
-        layersEl.insertBefore(newLayer, layersEl.firstElementChild);
-      } else {
-        layersEl.appendChild(newLayer);
-      }
+      layersEl.insertBefore(
+          newLayer,
+          layersEl.children[layersEl.childElementCount - index]);
     }
   });
 
@@ -14666,7 +14663,12 @@ function renderLayers(canvasItemList, selectedCanvasItemId) {
     }
     child = nextChild;
   }
+}
 
+/**
+ * @param {number} selectedCanvasItemId
+ */
+function checkSelectedLayer(selectedCanvasItemId) {
   // Set value of the selected canvas item (in case it was deleted.)
   const selected = document.getElementById(`selected-${selectedCanvasItemId}`);
   if (selected) {
