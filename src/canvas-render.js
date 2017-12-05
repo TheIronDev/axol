@@ -10,8 +10,8 @@ export const clearCanvas = (ctx) => {
 
 /**
  * Returns the center of a canvasItem
- * @param canvasItem
- * @returns {{centerX: number, centerY: number}}
+ * @param {!CanvasItem} canvasItem
+ * @return {{centerX: number, centerY: number}}
  */
 export const getCanvasItemCenter = (canvasItem) => {
   const {startX, startY, type} = canvasItem;
@@ -64,7 +64,7 @@ export const getCanvasItemCenter = (canvasItem) => {
 /**
  * Renders a canvasItem onto a canvas context.
  * @param {!CanvasRenderingContext2D} ctx
- * @param canvasItem
+ * @param {!CanvasItem} canvasItem
  * @param {number} centerX
  * @param {number} centerY
  */
@@ -122,7 +122,7 @@ export const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
  * acts as a high order function, being passed in a canvas context and
  * returning a method that will handle any given canvasItem.
  * @param {!CanvasRenderingContext2D} ctx
- * @returns {function(*=)}
+ * @return {function(*=)}
  */
 export const canvasItemRenderer = (ctx) => {
   return (canvasItem) => {

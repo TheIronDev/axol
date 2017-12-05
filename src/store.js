@@ -1,6 +1,6 @@
 import {Subject} from 'rxjs/Rx';
 import ActionEnum from './const/canvas-action-enum';
-import reducer from  './reducer';
+import reducer from './reducer';
 
 const initialState = {
   currentCanvasItemList: [],
@@ -10,7 +10,7 @@ const initialState = {
   currentActionFillColor: '#000',
   currentActionLineColor: '#000',
   currentActionLineWidth: 1,
-  selectedCanvasItemId: null
+  selectedCanvasItemId: null,
 };
 
 // The ActionSubject is the entry point for our flux code to flow through.

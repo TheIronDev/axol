@@ -14498,7 +14498,7 @@ const initialState = {
   currentActionFillColor: '#000',
   currentActionLineColor: '#000',
   currentActionLineWidth: 1,
-  selectedCanvasItemId: null
+  selectedCanvasItemId: null,
 };
 
 // The ActionSubject is the entry point for our flux code to flow through.
@@ -14559,13 +14559,18 @@ __WEBPACK_IMPORTED_MODULE_6__store__["b" /* store$ */].subscribe((state) => {
 });
 
 /**
- * @typedef {{type: CanvasActionEnum, id: number, startX: number, startY: number}}
+ * @typedef CanvasItem
+ * @type {Object}
+ * @property {CanvasActionEnum} type
+ * @property {number} id
+ * @property {number} startX
+ * @property {number} startY
  */
-let CanvasItem;
 
 /**
  * Updates the layers of actions
  * @param {!CanvasItem} canvasItem
+ * @return {!Element}
  */
 function createLayer(canvasItem) {
   const {id, type, fillColor, lineColor} = canvasItem;
@@ -14627,6 +14632,11 @@ function createLayer(canvasItem) {
   return li;
 }
 
+/**
+ *
+ * @param {!Array<!CanvasItem>} canvasItemList
+ * @param {number} selectedCanvasItemId
+ */
 function renderLayers(canvasItemList, selectedCanvasItemId) {
   // Add canvasItem layers if they don't already exist.
   canvasItemList.forEach((canvasItem) => {
@@ -14702,7 +14712,8 @@ const targetCanvasMousedown$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable
       const {offsetX: startX, offsetY: startY} = ev;
       return {startX, startY};
     });
-const targetCanvastouchStart$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'touchstart')
+const targetCanvastouchStart$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"]
+    .fromEvent(targetCanvasEl, 'touchstart')
     .map((ev) => {
       const {touches} = ev;
       const {target} = touches[0];
@@ -14741,7 +14752,8 @@ const endDraw$ = docMouseUp$.merge(docTouchEnd$);
 const drawFlow$ = startDraw$
     .switchMap(({startX, startY}) => {
       const path = [];
-      let endX, endY;
+      let endX;
+      let endY;
       return draw$
           .map((ev) => {
             const {localEndX, localEndY} = ev;
@@ -14766,7 +14778,9 @@ const drawFlow$ = startDraw$
 drawFlow$.subscribe();
 
 document.querySelectorAll('.actions').forEach((action) => {
-  action.addEventListener('change', (ev) => Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["l" /* updateCurrentActionFromInput */])(ev.target.value));
+  action.addEventListener('change', (ev) => {
+    return Object(__WEBPACK_IMPORTED_MODULE_5__actions_actions__["l" /* updateCurrentActionFromInput */])(ev.target.value);
+  });
 });
 
 document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
@@ -14822,7 +14836,6 @@ layersEl.addEventListener('click', (ev) => {
       break;
     default:
   }
-
 }, true);
 
 layersEl.addEventListener('mousemove', (ev) => {
@@ -25951,8 +25964,8 @@ const clearCanvas = (ctx) => {
 
 /**
  * Returns the center of a canvasItem
- * @param canvasItem
- * @returns {{centerX: number, centerY: number}}
+ * @param {!CanvasItem} canvasItem
+ * @return {{centerX: number, centerY: number}}
  */
 const getCanvasItemCenter = (canvasItem) => {
   const {startX, startY, type} = canvasItem;
@@ -26007,7 +26020,7 @@ const getCanvasItemCenter = (canvasItem) => {
 /**
  * Renders a canvasItem onto a canvas context.
  * @param {!CanvasRenderingContext2D} ctx
- * @param canvasItem
+ * @param {!CanvasItem} canvasItem
  * @param {number} centerX
  * @param {number} centerY
  */
@@ -26067,7 +26080,7 @@ const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
  * acts as a high order function, being passed in a canvas context and
  * returning a method that will handle any given canvasItem.
  * @param {!CanvasRenderingContext2D} ctx
- * @returns {function(*=)}
+ * @return {function(*=)}
  */
 const canvasItemRenderer = (ctx) => {
   return (canvasItem) => {
@@ -26347,13 +26360,14 @@ updateCurrentActionLineWidth
  * Dispatcher function, a high order function that dispatches actions to the
  * store.
  * @param {!Function} fn
- * @returns {function(...[*])}
+ * @return {function(...[*])}
  */
 function dispatcher(fn) {
   return (...args) => {
     __WEBPACK_IMPORTED_MODULE_0__store__["a" /* action$ */].next(fn(...args));
   };
 }
+
 
 /***/ }),
 /* 465 */
@@ -26378,19 +26392,19 @@ const {
   UPDATE_CURRENT_ACTION,
   UPDATE_CURRENT_ACTION_FILL,
   UPDATE_CURRENT_ACTION_LINE,
-  UPDATE_CURRENT_ACTION_LINE_WIDTH
+  UPDATE_CURRENT_ACTION_LINE_WIDTH,
 } = __WEBPACK_IMPORTED_MODULE_0__const_action__["a" /* default */];
 
 /**
- * @typedef {{
- *   currentCanvasItemList: !Array,
- *   previewCanvasItemList: !Array,
- *   currentAction: !ActionEnum,
- *   currentActionFillColor: string,
- *   currentActionLineColor: string,
- *   selectedCanvasItemId: ?number}} AppState
+ * @typedef AppState
+ * @type {!Object}
+ * @property {!Array<!CanvasItem>}
+ * @property {!Array<!CanvasItem>}
+ * @property {!ActionEnum} currentAction
+ * @property {string} currentActionFillColor
+ * @property {string} currentActionLineColor
+ * @property {?number} selectedCanvasItemId
  */
-let AppState;
 
 /**
  * Returns new canvasItem from recorded mousedown and mousemove/up states.
@@ -26414,7 +26428,7 @@ function createNewCanvasItem(state, payload) {
     lineWidth: currentActionLineWidth,
     rotate: 0,
     startX,
-    startY
+    startY,
   };
   let type;
 
@@ -26458,7 +26472,7 @@ function createNewCanvasItem(state, payload) {
 function modifyCanvasItem(state, payload) {
   const {startX, startY, endX, endY} = payload;
   let selectedCanvasItem = state.currentCanvasItemList.find(
-      (canvasItem) =>  canvasItem.id === state.selectedCanvasItemId);
+      (canvasItem) => canvasItem.id === state.selectedCanvasItemId);
   if (!selectedCanvasItem) {
     return null;
   }
@@ -26512,9 +26526,9 @@ function createCanvasItem(state, payload) {
 
 /**
  * Reducer function used to handle the different type of switch-case events.
- * @param state
- * @param dispatchedAction
- * @returns {AppState}
+ * @param {!AppState} state
+ * @param {!Object} dispatchedAction
+ * @return {!AppState}
  */
 const reducer = (state, dispatchedAction) => {
   const {type, payload} = dispatchedAction;

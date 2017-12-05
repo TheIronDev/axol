@@ -19,7 +19,7 @@ import {
   updateCurrentActionFill,
   updateCurrentActionLine,
   updateCurrentActionLineWidth,
-} from "./actions/actions";
+} from './actions/actions';
 import {store$} from './store';
 
 
@@ -39,13 +39,18 @@ store$.subscribe((state) => {
 });
 
 /**
- * @typedef {{type: CanvasActionEnum, id: number, startX: number, startY: number}}
+ * @typedef CanvasItem
+ * @type {Object}
+ * @property {CanvasActionEnum} type
+ * @property {number} id
+ * @property {number} startX
+ * @property {number} startY
  */
-let CanvasItem;
 
 /**
  * Updates the layers of actions
  * @param {!CanvasItem} canvasItem
+ * @return {!Element}
  */
 function createLayer(canvasItem) {
   const {id, type, fillColor, lineColor} = canvasItem;
@@ -107,6 +112,11 @@ function createLayer(canvasItem) {
   return li;
 }
 
+/**
+ *
+ * @param {!Array<!CanvasItem>} canvasItemList
+ * @param {number} selectedCanvasItemId
+ */
 function renderLayers(canvasItemList, selectedCanvasItemId) {
   // Add canvasItem layers if they don't already exist.
   canvasItemList.forEach((canvasItem) => {
@@ -182,7 +192,8 @@ const targetCanvasMousedown$ = Observable.fromEvent(targetCanvasEl, 'mousedown')
       const {offsetX: startX, offsetY: startY} = ev;
       return {startX, startY};
     });
-const targetCanvastouchStart$ = Observable.fromEvent(targetCanvasEl, 'touchstart')
+const targetCanvastouchStart$ = Observable
+    .fromEvent(targetCanvasEl, 'touchstart')
     .map((ev) => {
       const {touches} = ev;
       const {target} = touches[0];
@@ -221,7 +232,8 @@ const endDraw$ = docMouseUp$.merge(docTouchEnd$);
 const drawFlow$ = startDraw$
     .switchMap(({startX, startY}) => {
       const path = [];
-      let endX, endY;
+      let endX;
+      let endY;
       return draw$
           .map((ev) => {
             const {localEndX, localEndY} = ev;
@@ -246,7 +258,9 @@ const drawFlow$ = startDraw$
 drawFlow$.subscribe();
 
 document.querySelectorAll('.actions').forEach((action) => {
-  action.addEventListener('change', (ev) => updateCurrentActionFromInput(ev.target.value));
+  action.addEventListener('change', (ev) => {
+    return updateCurrentActionFromInput(ev.target.value);
+  });
 });
 
 document.querySelector('#actionFillColor').addEventListener('change', (ev) => {
@@ -302,7 +316,6 @@ layersEl.addEventListener('click', (ev) => {
       break;
     default:
   }
-
 }, true);
 
 layersEl.addEventListener('mousemove', (ev) => {

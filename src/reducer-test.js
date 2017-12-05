@@ -9,9 +9,13 @@ const {
   MOVE,
   CIRCLE,
   RECTANGLE,
-  ROTATE
+  ROTATE,
 } = ActionEnum;
 
+/**
+ * @param {!Object} payload
+ * @return {!CanvasItem}
+ */
 function getCanvasItem(payload) {
   const baseCanvasItem = {
     fillColor: '#000',
@@ -19,7 +23,7 @@ function getCanvasItem(payload) {
     lineWidth: 1,
     rotate: 0,
     startX: 0,
-    startY: 0
+    startY: 0,
   };
   return Object.assign({}, baseCanvasItem, payload);
 }
@@ -37,7 +41,7 @@ describe('reducer', () => {
       currentActionFillColor: '#000',
       currentActionLineColor: '#000',
       currentActionLineWidth: 1,
-      selectedCanvasItemId: null
+      selectedCanvasItemId: null,
     };
     dispatchedAction = {type: '', payload: ''};
   });
@@ -54,7 +58,7 @@ describe('reducer', () => {
       initialState.currentAction = CIRCLE;
       dispatchedAction = {
         type: action.ADD_OR_MODIFY_CANVAS_ITEM,
-        payload: {startX: 0, startY: 0, endX: 1, endY: 0, id: 29}
+        payload: {startX: 0, startY: 0, endX: 1, endY: 0, id: 29},
       };
       const expectedCanvasItem = getCanvasItem(
           {id: 1, radius: 1, type: CIRCLE});
@@ -68,7 +72,7 @@ describe('reducer', () => {
       initialState.currentAction = RECTANGLE;
       dispatchedAction = {
         type: action.ADD_OR_MODIFY_CANVAS_ITEM,
-        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 30}
+        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 30},
       };
       const expectedCanvasItem = getCanvasItem(
           {id: 1, height: 2, type: RECTANGLE, width: 2});
@@ -82,7 +86,7 @@ describe('reducer', () => {
       initialState.currentAction = LINE;
       dispatchedAction = {
         type: action.ADD_OR_MODIFY_CANVAS_ITEM,
-        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 31}
+        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 31},
       };
 
       const expectedCanvasItem = getCanvasItem(
@@ -97,12 +101,12 @@ describe('reducer', () => {
         {x: 2, y: 0},
         {x: 2, y: 2},
         {x: 0, y: 2},
-        {x: 0, y: 0}
+        {x: 0, y: 0},
       ];
       initialState.currentAction = BRUSH;
       dispatchedAction = {
         type: action.ADD_OR_MODIFY_CANVAS_ITEM,
-        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 31, path}
+        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 31, path},
       };
 
       const expectedCanvasItem = getCanvasItem(
@@ -116,15 +120,15 @@ describe('reducer', () => {
       initialState.currentAction = MOVE;
       initialState.currentCanvasItemList = [
         getCanvasItem({id: 31, type: LINE, yOffset: 2, xOffset: 2}),
-        getCanvasItem({id: 30,type: LINE, yOffset: 2,xOffset: 2})
+        getCanvasItem({id: 30, type: LINE, yOffset: 2, xOffset: 2}),
       ];
       initialState.selectedCanvasItemId = 30;
       dispatchedAction = {
         type: action.ADD_OR_MODIFY_CANVAS_ITEM,
-        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 32}
+        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 32},
       };
       const expectedCanvasItem = getCanvasItem(
-          {id: 30, startX: 2, startY: 2, type: LINE, yOffset: 2,xOffset: 2});
+          {id: 30, startX: 2, startY: 2, type: LINE, yOffset: 2, xOffset: 2});
 
       const result = reducer(initialState, dispatchedAction);
       expect(result.currentCanvasItemList[1]).to.eql(expectedCanvasItem);
@@ -135,12 +139,12 @@ describe('reducer', () => {
       initialState.currentCanvasItemList = [
         getCanvasItem({id: 32, type: LINE, yOffset: 2, xOffset: 2}),
         getCanvasItem({id: 31, type: LINE, yOffset: 2, xOffset: 2}),
-        getCanvasItem({id: 30, type: LINE, yOffset: 2,xOffset: 2})
+        getCanvasItem({id: 30, type: LINE, yOffset: 2, xOffset: 2}),
       ];
       initialState.selectedCanvasItemId = 30;
       dispatchedAction = {
         type: action.ADD_OR_MODIFY_CANVAS_ITEM,
-        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 33}
+        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 33},
       };
       const expectedCanvasItem = getCanvasItem(
           {id: 30, rotate: 4, type: LINE, yOffset: 2, xOffset: 2});
@@ -158,7 +162,7 @@ describe('reducer', () => {
       initialState.currentCanvasItemList = [item3, item2, item1];
       dispatchedAction = {
         type: action.HIGHLIGHT_CANVAS_ITEM,
-        payload: 31
+        payload: 31,
       };
       const expectedCanvasItem = Object.assign(
           {}, item2, {fillColor: '#f00', lineColor: '#f00'});
@@ -176,7 +180,7 @@ describe('reducer', () => {
       initialState.currentCanvasItemList = [item3, item2, item1];
       dispatchedAction = {
         type: action.MODIFY_CANVAS_ITEM,
-        payload: {id: 31, fillColor: '#f0f', lineColor: '#f0f'}
+        payload: {id: 31, fillColor: '#f0f', lineColor: '#f0f'},
       };
       const expectedCanvasItem = Object.assign(
           {}, item2, {fillColor: '#f0f', lineColor: '#f0f'});
@@ -194,7 +198,7 @@ describe('reducer', () => {
       initialState.currentCanvasItemList = [item3, item2, item1];
       dispatchedAction = {
         type: action.REMOVE_CANVAS_ITEM,
-        payload: 31
+        payload: 31,
       };
 
       const result = reducer(initialState, dispatchedAction);
@@ -207,7 +211,7 @@ describe('reducer', () => {
       initialState.currentAction = LINE;
       dispatchedAction = {
         type: action.SET_PREVIEW_CANVAS_ITEM,
-        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 30}
+        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 30},
       };
 
       const expected =

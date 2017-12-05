@@ -14,19 +14,19 @@ const {
   UPDATE_CURRENT_ACTION,
   UPDATE_CURRENT_ACTION_FILL,
   UPDATE_CURRENT_ACTION_LINE,
-  UPDATE_CURRENT_ACTION_LINE_WIDTH
+  UPDATE_CURRENT_ACTION_LINE_WIDTH,
 } = action;
 
 /**
- * @typedef {{
- *   currentCanvasItemList: !Array,
- *   previewCanvasItemList: !Array,
- *   currentAction: !ActionEnum,
- *   currentActionFillColor: string,
- *   currentActionLineColor: string,
- *   selectedCanvasItemId: ?number}} AppState
+ * @typedef AppState
+ * @type {!Object}
+ * @property {!Array<!CanvasItem>}
+ * @property {!Array<!CanvasItem>}
+ * @property {!ActionEnum} currentAction
+ * @property {string} currentActionFillColor
+ * @property {string} currentActionLineColor
+ * @property {?number} selectedCanvasItemId
  */
-let AppState;
 
 /**
  * Returns new canvasItem from recorded mousedown and mousemove/up states.
@@ -50,7 +50,7 @@ function createNewCanvasItem(state, payload) {
     lineWidth: currentActionLineWidth,
     rotate: 0,
     startX,
-    startY
+    startY,
   };
   let type;
 
@@ -94,7 +94,7 @@ function createNewCanvasItem(state, payload) {
 function modifyCanvasItem(state, payload) {
   const {startX, startY, endX, endY} = payload;
   let selectedCanvasItem = state.currentCanvasItemList.find(
-      (canvasItem) =>  canvasItem.id === state.selectedCanvasItemId);
+      (canvasItem) => canvasItem.id === state.selectedCanvasItemId);
   if (!selectedCanvasItem) {
     return null;
   }
@@ -148,9 +148,9 @@ function createCanvasItem(state, payload) {
 
 /**
  * Reducer function used to handle the different type of switch-case events.
- * @param state
- * @param dispatchedAction
- * @returns {AppState}
+ * @param {!AppState} state
+ * @param {!Object} dispatchedAction
+ * @return {!AppState}
  */
 const reducer = (state, dispatchedAction) => {
   const {type, payload} = dispatchedAction;

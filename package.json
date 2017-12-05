@@ -4,11 +4,15 @@
   "description": "A simple canvas sketch pad.",
   "main": "webpack.config.js",
   "scripts": {
+    "lint": "eslint src/*.js",
     "start": "webpack --watch",
     "test": "mocha-webpack 'src/*-test.js'",
     "test-watch": "mocha-webpack 'src/*-test.js' --watch"
   },
-  "pre-commit": ["test"],
+  "pre-commit": [
+    "lint",
+    "test"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TheIronDev/axol.git"
@@ -20,6 +24,8 @@
   },
   "homepage": "https://github.com/TheIronDev/axol#readme",
   "devDependencies": {
+    "eslint": "^4.12.1",
+    "eslint-config-google": "^0.9.1",
     "expect.js": "^0.3.1",
     "mocha": "^4.0.1",
     "mocha-webpack": "^1.0.1",
