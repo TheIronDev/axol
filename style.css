@@ -23,9 +23,12 @@ body {background: #fafafa;font: 10px 'Raleway', sans-serif;padding: 1rem}
 .layer {align-items: center;display: flex}
 .layerShape {border: 1px solid #ccc; border-radius: 3px}
 .layerAction {cursor: pointer}
+.lineWidthInput {max-width: 4rem;}
 
 @media (max-width: 30rem) {
-  body {overflow: hidden}
+  body, html {overflow: hidden}
+  .actionsWrapper {position: absolute; top: 12rem; width: 4rem; z-index: 1}
   .app {flex-direction: row}
+  .palette {max-width: 4rem}
   .renderedResults {flex-direction: column}
 }
