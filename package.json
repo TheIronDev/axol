@@ -8,6 +8,7 @@
     "test": "mocha-webpack 'src/*-test.js'",
     "test-watch": "mocha-webpack 'src/*-test.js' --watch"
   },
+  "pre-commit": ["test"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TheIronDev/axol.git"
@@ -22,6 +23,7 @@
     "expect.js": "^0.3.1",
     "mocha": "^4.0.1",
     "mocha-webpack": "^1.0.1",
+    "pre-commit": "^1.2.2",
     "webpack": "^3.8.1"
   },
   "dependencies": {
