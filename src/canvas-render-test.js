@@ -142,4 +142,101 @@ describe('canvas-render', () => {
       });
     });
   });
+
+  describe('renderCanvasItem', () => {
+    it('should set + unset rotate, translation, and path', () => {
+      const mockCanvasItem = {
+        radius: 10,
+        rotate: 1,
+        type: CanvasActionEnum.CIRCLE,
+      };
+      const centerX = 10;
+      const centerY = 10;
+
+      canvasRender.renderCanvasItem(mockCtx, mockCanvasItem, centerX, centerY);
+
+      expect(mockCtx.translate.calledWith(centerX, centerY)).to.be(true);
+      expect(mockCtx.rotate.calledWith(mockCanvasItem.rotate * Math.PI / 180))
+          .to.be(true);
+      expect(mockCtx.beginPath.calledWith()).to.be(true);
+      expect(mockCtx.closePath.calledWith()).to.be(true);
+      expect(mockCtx.rotate.calledWith(-mockCanvasItem.rotate * Math.PI / 180))
+          .to.be(true);
+      expect(mockCtx.translate.calledWith(-centerX, -centerY)).to.be(true);
+    });
+
+    it('should render brush', () => {
+      const mockCanvasItem = {
+        path: [
+          {x: 1, y: 1},
+          {x: 2, y: 2},
+          {x: -2, y: -1},
+        ],
+        startX: 10,
+        startY: 10,
+        rotate: 1,
+        type: CanvasActionEnum.BRUSH,
+      };
+      const centerX = 15;
+      const centerY = 15;
+
+      canvasRender.renderCanvasItem(mockCtx, mockCanvasItem, centerX, centerY);
+
+      const x = -centerX + mockCanvasItem.startX;
+      const y = -centerY + mockCanvasItem.startY;
+      expect(mockCtx.lineTo.calledWith(x + 1, y + 1)).to.be(true);
+      expect(mockCtx.lineTo.calledWith(x + 2, y + 2)).to.be(true);
+      expect(mockCtx.lineTo.calledWith(x - 2, y - 1)).to.be(true);
+      expect(mockCtx.fill.calledWith()).to.be(true);
+      expect(mockCtx.stroke.calledWith()).to.be(true);
+    });
+
+    it('should render circle', () => {
+      const mockCanvasItem = {
+        radius: 10,
+        rotate: 1,
+        type: CanvasActionEnum.CIRCLE,
+      };
+      const centerX = 10;
+      const centerY = 10;
+
+      canvasRender.renderCanvasItem(mockCtx, mockCanvasItem, centerX, centerY);
+
+      expect(mockCtx.arc.calledWith(
+          0, 0, mockCanvasItem.radius, 0, 2 * Math.PI, false)).to.be(true);
+      expect(mockCtx.fill.calledWith()).to.be(true);
+    });
+
+    it('should render line', () => {
+      const mockCanvasItem = {
+        xOffset: 10,
+        yOffset: 10,
+        rotate: 1,
+        type: CanvasActionEnum.LINE,
+      };
+      const centerX = 10;
+      const centerY = 10;
+
+      canvasRender.renderCanvasItem(mockCtx, mockCanvasItem, centerX, centerY);
+
+      expect(mockCtx.moveTo.calledWith(-5, -5)).to.be(true);
+      expect(mockCtx.lineTo.calledWith(5, 5)).to.be(true);
+      expect(mockCtx.stroke.calledWith()).to.be(true);
+    });
+
+    it('should render rectangle', () => {
+      const mockCanvasItem = {
+        height: 10,
+        width: 10,
+        rotate: 1,
+        type: CanvasActionEnum.RECTANGLE,
+      };
+      const centerX = 10;
+      const centerY = 10;
+
+      canvasRender.renderCanvasItem(mockCtx, mockCanvasItem, centerX, centerY);
+
+      expect(mockCtx.fillRect.calledWith(-5, -5)).to.be(true);
+    });
+  });
 });
