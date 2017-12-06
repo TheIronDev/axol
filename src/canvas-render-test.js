@@ -1,3 +1,4 @@
+import CanvasActionEnum from './const/canvas-action-enum';
 import expect from 'expect.js';
 import sinon from 'sinon';
 import * as canvasRender from './canvas-render';
@@ -74,6 +75,71 @@ describe('canvas-render', () => {
 
       renderer();
       expect(mockCtx.fillStyle).to.be(undefined);
+    });
+  });
+
+  describe('getCanvasItemCenter', () => {
+    it('should get center coordinates of brush', () => {
+      const canvasItem = {
+        path: [
+          {x: -3, y: -3},
+          {x: 7, y: 7},
+          {x: 3, y: 3},
+          {x: 1, y: -1},
+          {x: -2, y: 6},
+        ],
+        startX: 13,
+        startY: 13,
+        type: CanvasActionEnum.BRUSH,
+      };
+
+      expect(canvasRender.getCanvasItemCenter(canvasItem)).to.eql({
+        centerX: 15,
+        centerY: 15,
+      });
+    });
+
+    it('should get center coordinates of line', () => {
+      const canvasItem = {
+        xOffset: 10,
+        yOffset: 10,
+        startX: 10,
+        startY: 10,
+        type: CanvasActionEnum.LINE,
+      };
+
+      expect(canvasRender.getCanvasItemCenter(canvasItem)).to.eql({
+        centerX: 15,
+        centerY: 15,
+      });
+    });
+
+    it('should get center coordinates of rectangle', () => {
+      const canvasItem = {
+        width: 10,
+        height: 10,
+        startX: 10,
+        startY: 10,
+        type: CanvasActionEnum.RECTANGLE,
+      };
+
+      expect(canvasRender.getCanvasItemCenter(canvasItem)).to.eql({
+        centerX: 15,
+        centerY: 15,
+      });
+    });
+
+    it('should assume starting point is center point for other types', () => {
+      const canvasItem = {
+        startX: 15,
+        startY: 15,
+        type: CanvasActionEnum.CIRCLE,
+      };
+
+      expect(canvasRender.getCanvasItemCenter(canvasItem)).to.eql({
+        centerX: 15,
+        centerY: 15,
+      });
     });
   });
 });
