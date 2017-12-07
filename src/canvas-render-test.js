@@ -187,7 +187,6 @@ describe('canvas-render', () => {
       expect(mockCtx.lineTo.calledWith(x + 1, y + 1)).to.be(true);
       expect(mockCtx.lineTo.calledWith(x + 2, y + 2)).to.be(true);
       expect(mockCtx.lineTo.calledWith(x - 2, y - 1)).to.be(true);
-      expect(mockCtx.fill.calledWith()).to.be(true);
       expect(mockCtx.stroke.calledWith()).to.be(true);
     });
 

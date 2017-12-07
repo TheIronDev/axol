@@ -26045,7 +26045,6 @@ const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
       path.forEach((point) => {
         ctx.lineTo(x + point.x, y + point.y);
       });
-      ctx.fill();
       ctx.stroke();
       break;
     case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].CIRCLE:

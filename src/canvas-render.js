@@ -87,7 +87,6 @@ export const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
       path.forEach((point) => {
         ctx.lineTo(x + point.x, y + point.y);
       });
-      ctx.fill();
       ctx.stroke();
       break;
     case CanvasActionEnum.CIRCLE:
