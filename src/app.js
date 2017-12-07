@@ -207,13 +207,16 @@ const targetCanvastouchStart$ = Observable
       let startY = touches[0].clientY - y;
       return {startX, startY};
     });
-const targetCanvasMouseMove$ = Observable.fromEvent(targetCanvasEl, 'mousemove')
+const targetCanvasMouseMove$ = Observable
+    .fromEvent(targetCanvasEl, 'mousemove', true)
     .throttleTime(16)
     .map((ev) => {
       const {offsetX, offsetY} = ev;
       return {localEndX: offsetX, localEndY: offsetY};
     });
-const targetCanvasTouchMove$ = Observable.fromEvent(targetCanvasEl, 'touchmove')
+const targetCanvasTouchMove$ = Observable
+    .fromEvent(targetCanvasEl, 'touchmove', true)
+    .do((ev) => ev.preventDefault())
     .throttleTime(16)
     .map((ev) => {
       const {touches} = ev;

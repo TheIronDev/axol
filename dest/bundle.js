@@ -14728,13 +14728,16 @@ const targetCanvastouchStart$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observabl
       let startY = touches[0].clientY - y;
       return {startX, startY};
     });
-const targetCanvasMouseMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'mousemove')
+const targetCanvasMouseMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"]
+    .fromEvent(targetCanvasEl, 'mousemove', true)
     .throttleTime(16)
     .map((ev) => {
       const {offsetX, offsetY} = ev;
       return {localEndX: offsetX, localEndY: offsetY};
     });
-const targetCanvasTouchMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'touchmove')
+const targetCanvasTouchMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"]
+    .fromEvent(targetCanvasEl, 'touchmove', true)
+    .do((ev) => ev.preventDefault())
     .throttleTime(16)
     .map((ev) => {
       const {touches} = ev;
