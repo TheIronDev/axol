@@ -175,6 +175,9 @@ function updateSelectedAction(currentAction) {
     case CanvasActionEnums.CIRCLE:
       selectedInput = document.getElementById('action-circle');
       break;
+    case CanvasActionEnums.POLYGON:
+      selectedInput = document.getElementById('action-polygon');
+      break;
     case CanvasActionEnums.RECTANGLE:
       selectedInput = document.getElementById('action-rectangle');
       break;

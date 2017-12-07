@@ -71,6 +71,10 @@ function createNewCanvasItem(state, payload) {
       const yOffset = endY - startY;
       Object.assign(canvasItem, {xOffset, yOffset, type});
       break;
+    case CanvasActionEnum.POLYGON:
+      type = CanvasActionEnum.POLYGON;
+      Object.assign(canvasItem, {path, type});
+      break;
     case CanvasActionEnum.RECTANGLE:
       const width = endX - startX;
       const height = endY - startY;
@@ -135,6 +139,7 @@ function createCanvasItem(state, payload) {
   switch (state.currentAction) {
     case CanvasActionEnum.BRUSH:
     case CanvasActionEnum.CIRCLE:
+    case CanvasActionEnum.POLYGON:
     case CanvasActionEnum.RECTANGLE:
     case CanvasActionEnum.LINE:
       return createNewCanvasItem(state, payload);
@@ -166,6 +171,7 @@ const reducer = (state, dispatchedAction) => {
       switch (state.currentAction) {
         case CanvasActionEnum.BRUSH:
         case CanvasActionEnum.CIRCLE:
+        case CanvasActionEnum.POLYGON:
         case CanvasActionEnum.RECTANGLE:
         case CanvasActionEnum.LINE:
           selectedCanvasItemId = newCanvasItem.id;

@@ -4,6 +4,7 @@ export default {
   LINE: 'l',
   MOVE: 'm',
   CIRCLE: 'c',
+  POLYGON: 'p',
   RECTANGLE: 're',
   ROTATE: 'ro',
   UNKNOWN: 'u'

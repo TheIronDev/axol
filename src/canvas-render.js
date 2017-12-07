@@ -19,6 +19,7 @@ export const getCanvasItemCenter = (canvasItem) => {
   let centerY;
   switch (type) {
     case CanvasActionEnum.BRUSH:
+    case CanvasActionEnum.POLYGON:
       const {path} = canvasItem;
       const edges = path.reduce((memo, point) => {
         const {leftEdge, topEdge, rightEdge, bottomEdge} = memo;
@@ -70,6 +71,8 @@ export const getCanvasItemCenter = (canvasItem) => {
  */
 export const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
   const {startX, startY, type, rotate} = canvasItem;
+  let x;
+  let y;
 
   // Rotate the canvas pivoted on the center of the canvasItem.
   ctx.translate(centerX, centerY);
@@ -81,10 +84,9 @@ export const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
   // Depending on the canvasItem type, we draw shapes differently.
   switch (type) {
     case CanvasActionEnum.BRUSH:
-      const {path} = canvasItem;
-      const x = -centerX + startX;
-      const y = -centerY + startY;
-      path.forEach((point) => {
+      x = -centerX + startX;
+      y = -centerY + startY;
+      canvasItem.path.forEach((point) => {
         ctx.lineTo(x + point.x, y + point.y);
       });
       ctx.stroke();
@@ -98,6 +100,15 @@ export const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
       const {xOffset, yOffset} = canvasItem;
       ctx.moveTo(-xOffset / 2, -yOffset / 2);
       ctx.lineTo(xOffset / 2, yOffset / 2);
+      ctx.stroke();
+      break;
+    case CanvasActionEnum.POLYGON:
+      x = -centerX + startX;
+      y = -centerY + startY;
+      canvasItem.path.forEach((point) => {
+        ctx.lineTo(x + point.x, y + point.y);
+      });
+      ctx.fill();
       ctx.stroke();
       break;
     case CanvasActionEnum.RECTANGLE:

@@ -114,6 +114,26 @@ describe('canvas-render', () => {
       });
     });
 
+    it('should get center coordinates of polygon', () => {
+      const canvasItem = {
+        path: [
+          {x: -3, y: -3},
+          {x: 7, y: 7},
+          {x: 3, y: 3},
+          {x: 1, y: -1},
+          {x: -2, y: 6},
+        ],
+        startX: 13,
+        startY: 13,
+        type: CanvasActionEnum.POLYGON,
+      };
+
+      expect(canvasRender.getCanvasItemCenter(canvasItem)).to.eql({
+        centerX: 15,
+        centerY: 15,
+      });
+    });
+
     it('should get center coordinates of rectangle', () => {
       const canvasItem = {
         width: 10,
@@ -220,6 +240,32 @@ describe('canvas-render', () => {
 
       expect(mockCtx.moveTo.calledWith(-5, -5)).to.be(true);
       expect(mockCtx.lineTo.calledWith(5, 5)).to.be(true);
+      expect(mockCtx.stroke.calledWith()).to.be(true);
+    });
+
+    it('should render polygon', () => {
+      const mockCanvasItem = {
+        path: [
+          {x: 1, y: 1},
+          {x: 2, y: 2},
+          {x: -2, y: -1},
+        ],
+        startX: 10,
+        startY: 10,
+        rotate: 1,
+        type: CanvasActionEnum.POLYGON,
+      };
+      const centerX = 15;
+      const centerY = 15;
+
+      canvasRender.renderCanvasItem(mockCtx, mockCanvasItem, centerX, centerY);
+
+      const x = -centerX + mockCanvasItem.startX;
+      const y = -centerY + mockCanvasItem.startY;
+      expect(mockCtx.lineTo.calledWith(x + 1, y + 1)).to.be(true);
+      expect(mockCtx.lineTo.calledWith(x + 2, y + 2)).to.be(true);
+      expect(mockCtx.lineTo.calledWith(x - 2, y - 1)).to.be(true);
+      expect(mockCtx.fill.calledWith()).to.be(true);
       expect(mockCtx.stroke.calledWith()).to.be(true);
     });
 

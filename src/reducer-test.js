@@ -8,6 +8,7 @@ const {
   LINE,
   MOVE,
   CIRCLE,
+  POLYGON,
   RECTANGLE,
   ROTATE,
 } = ActionEnum;
@@ -111,6 +112,26 @@ describe('reducer', () => {
 
       const expectedCanvasItem = getCanvasItem(
           {id: 1, type: BRUSH, path});
+
+      const result = reducer(initialState, dispatchedAction);
+      expect(result.currentCanvasItemList).to.eql([expectedCanvasItem]);
+    });
+
+    it('should add a brush stroke if currentAction is POLYGON', () => {
+      const path = [
+        {x: 2, y: 0},
+        {x: 2, y: 2},
+        {x: 0, y: 2},
+        {x: 0, y: 0},
+      ];
+      initialState.currentAction = POLYGON;
+      dispatchedAction = {
+        type: action.ADD_OR_MODIFY_CANVAS_ITEM,
+        payload: {startX: 0, startY: 0, endX: 2, endY: 2, id: 31, path},
+      };
+
+      const expectedCanvasItem = getCanvasItem(
+          {id: 1, type: POLYGON, path});
 
       const result = reducer(initialState, dispatchedAction);
       expect(result.currentCanvasItemList).to.eql([expectedCanvasItem]);

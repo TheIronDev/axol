@@ -1564,6 +1564,7 @@ exports.MulticastOperator = MulticastOperator;
   LINE: 'l',
   MOVE: 'm',
   CIRCLE: 'c',
+  POLYGON: 'p',
   RECTANGLE: 're',
   ROTATE: 'ro',
   UNKNOWN: 'u'
@@ -14695,6 +14696,9 @@ function updateSelectedAction(currentAction) {
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
       selectedInput = document.getElementById('action-circle');
       break;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].POLYGON:
+      selectedInput = document.getElementById('action-polygon');
+      break;
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
       selectedInput = document.getElementById('action-rectangle');
       break;
@@ -25942,6 +25946,7 @@ exports.zipAll = zipAll_1.zipAll;
   [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].BRUSH]: 'brush',
   [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].LINE]: 'linear_scale',
   [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].CIRCLE]: 'lens',
+  [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].POLYGON]: 'vignette',
   [__WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].RECTANGLE]: 'crop_square',
 });
 
@@ -25975,6 +25980,7 @@ const getCanvasItemCenter = (canvasItem) => {
   let centerY;
   switch (type) {
     case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].BRUSH:
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].POLYGON:
       const {path} = canvasItem;
       const edges = path.reduce((memo, point) => {
         const {leftEdge, topEdge, rightEdge, bottomEdge} = memo;
@@ -26028,6 +26034,8 @@ const getCanvasItemCenter = (canvasItem) => {
  */
 const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
   const {startX, startY, type, rotate} = canvasItem;
+  let x;
+  let y;
 
   // Rotate the canvas pivoted on the center of the canvasItem.
   ctx.translate(centerX, centerY);
@@ -26039,10 +26047,9 @@ const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
   // Depending on the canvasItem type, we draw shapes differently.
   switch (type) {
     case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].BRUSH:
-      const {path} = canvasItem;
-      const x = -centerX + startX;
-      const y = -centerY + startY;
-      path.forEach((point) => {
+      x = -centerX + startX;
+      y = -centerY + startY;
+      canvasItem.path.forEach((point) => {
         ctx.lineTo(x + point.x, y + point.y);
       });
       ctx.stroke();
@@ -26056,6 +26063,15 @@ const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
       const {xOffset, yOffset} = canvasItem;
       ctx.moveTo(-xOffset / 2, -yOffset / 2);
       ctx.lineTo(xOffset / 2, yOffset / 2);
+      ctx.stroke();
+      break;
+    case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].POLYGON:
+      x = -centerX + startX;
+      y = -centerY + startY;
+      canvasItem.path.forEach((point) => {
+        ctx.lineTo(x + point.x, y + point.y);
+      });
+      ctx.fill();
       ctx.stroke();
       break;
     case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].RECTANGLE:
@@ -26343,6 +26359,7 @@ updateCurrentActionLineWidth
   brush: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].BRUSH,
   line: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].LINE,
   move: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].MOVE,
+  polygon: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].POLYGON,
   rotate: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].ROTATE,
   circle: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].CIRCLE,
   rectangle: __WEBPACK_IMPORTED_MODULE_0__canvas_action_enum__["a" /* default */].RECTANGLE,
@@ -26450,6 +26467,10 @@ function createNewCanvasItem(state, payload) {
       const yOffset = endY - startY;
       Object.assign(canvasItem, {xOffset, yOffset, type});
       break;
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].POLYGON:
+      type = __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].POLYGON;
+      Object.assign(canvasItem, {path, type});
+      break;
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
       const width = endX - startX;
       const height = endY - startY;
@@ -26514,6 +26535,7 @@ function createCanvasItem(state, payload) {
   switch (state.currentAction) {
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH:
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
+    case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].POLYGON:
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
     case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
       return createNewCanvasItem(state, payload);
@@ -26545,6 +26567,7 @@ const reducer = (state, dispatchedAction) => {
       switch (state.currentAction) {
         case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].BRUSH:
         case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].CIRCLE:
+        case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].POLYGON:
         case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].RECTANGLE:
         case __WEBPACK_IMPORTED_MODULE_1__const_canvas_action_enum__["a" /* default */].LINE:
           selectedCanvasItemId = newCanvasItem.id;
