@@ -14713,13 +14713,34 @@ function updateSelectedAction(currentAction) {
   selectedInput.checked = true;
 }
 
-const targetCanvasMousedown$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"].fromEvent(targetCanvasEl, 'mousedown')
+/**
+ * TODO(tystark): Put this in a place I can write tests for.
+ * @param {number} value
+ * @param {number} modulo
+ * @return {number} Smoothed value
+ */
+function smoothOffset(value, modulo) {
+  const halfMod = modulo / 2;
+  const remainder = value % modulo;
+  return remainder < halfMod ?
+      value - remainder :
+      value + (modulo - remainder);
+}
+
+const targetCanvasMousedown$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"]
+    .fromEvent(targetCanvasEl, 'mousedown')
+    .do((ev) => ev.preventDefault())
     .map((ev) => {
-      const {offsetX: startX, offsetY: startY} = ev;
+      let {offsetX: startX, offsetY: startY, shiftKey} = ev;
+      if (shiftKey) {
+        startX = smoothOffset(startX, 10);
+        startY = smoothOffset(startY, 10);
+      }
       return {startX, startY};
     });
 const targetCanvastouchStart$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"]
     .fromEvent(targetCanvasEl, 'touchstart')
+    .do((ev) => ev.preventDefault())
     .map((ev) => {
       const {touches} = ev;
       const {target} = touches[0];
@@ -14730,9 +14751,14 @@ const targetCanvastouchStart$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observabl
     });
 const targetCanvasMouseMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"]
     .fromEvent(targetCanvasEl, 'mousemove', true)
+    .do((ev) => ev.preventDefault())
     .throttleTime(16)
     .map((ev) => {
-      const {offsetX, offsetY} = ev;
+      let {offsetX, offsetY, shiftKey} = ev;
+      if (shiftKey) {
+        offsetX = smoothOffset(offsetX, 10);
+        offsetY = smoothOffset(offsetY, 10);
+      }
       return {localEndX: offsetX, localEndY: offsetY};
     });
 const targetCanvasTouchMove$ = __WEBPACK_IMPORTED_MODULE_0_rxjs_Rx__["Observable"]
