@@ -24,6 +24,7 @@ describe('canvas-render', () => {
       moveTo: sinon.spy(),
       rotate: sinon.spy(),
       stroke: sinon.spy(),
+      strokeRect: sinon.spy(),
       translate: sinon.spy(),
     };
   });
@@ -282,6 +283,7 @@ describe('canvas-render', () => {
       canvasRender.renderCanvasItem(mockCtx, mockCanvasItem, centerX, centerY);
 
       expect(mockCtx.fillRect.calledWith(-5, -5)).to.be(true);
+      expect(mockCtx.strokeRect.calledWith(-5, -5)).to.be(true);
     });
   });
 });

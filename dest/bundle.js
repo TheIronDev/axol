@@ -26087,6 +26087,7 @@ const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
       const {radius} = canvasItem;
       ctx.arc(0, 0, radius, 0, 2 * Math.PI, false);
       ctx.fill();
+      ctx.stroke();
       break;
     case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].LINE:
       const {xOffset, yOffset} = canvasItem;
@@ -26106,6 +26107,7 @@ const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
     case __WEBPACK_IMPORTED_MODULE_0__const_canvas_action_enum__["a" /* default */].RECTANGLE:
       const {width, height} = canvasItem;
       ctx.fillRect(-width / 2, -height/2, width, height);
+      ctx.strokeRect(-width / 2, -height/2, width, height);
       break;
     default:
   }

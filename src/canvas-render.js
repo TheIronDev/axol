@@ -95,6 +95,7 @@ export const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
       const {radius} = canvasItem;
       ctx.arc(0, 0, radius, 0, 2 * Math.PI, false);
       ctx.fill();
+      ctx.stroke();
       break;
     case CanvasActionEnum.LINE:
       const {xOffset, yOffset} = canvasItem;
@@ -114,6 +115,7 @@ export const renderCanvasItem = (ctx, canvasItem, centerX, centerY) => {
     case CanvasActionEnum.RECTANGLE:
       const {width, height} = canvasItem;
       ctx.fillRect(-width / 2, -height/2, width, height);
+      ctx.strokeRect(-width / 2, -height/2, width, height);
       break;
     default:
   }
