@@ -98,12 +98,12 @@ the biggest fan of using protos, since it adds extra overhead and data is a bit
 harder to debug... but it can be extremely valuable when passing around larger
 lists of CanvasItems.
 
-# Development and forking
+## Development and forking
 
 Contributions are always welcome, also feel free to fork this if you want to
 do your own thing. :)
 
-# License
+## License
 
 MIT License
 
